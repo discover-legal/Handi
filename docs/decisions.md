@@ -29,3 +29,20 @@ Decisions were taken by the project owner; defaults the owner did not set were t
 | date | gap |
 |---|---|
 | 2026-11-03 | No design exists for hand-authoring a Gated DeltaNet (delta-rule recurrence) layer. Rung 1 avoids it; Rung 2 fills Qwen DeltaNet layers with spectrum-matched random only. |
+
+## LegalBench subset for metric M4 (builder default, chosen 2026-11-03 before any Rung 2 run)
+
+Ten binary tasks with short inputs (average under 500 characters) and at least ~90 test items,
+evaluated zero-shot with each task's LegalBench base prompt, scored by comparing the log-probability
+of the two label strings; at most 500 items per task (fixed seed subsample where larger):
+`hearsay`, `overruling`, `nys_judicial_ethics`, `definition_classification`,
+`citation_prediction_classification`, `proa`, `diversity_1`, `diversity_6`, `cuad_governing_law`,
+`contract_nli_limited_use`.
+
+## Amendments and validity notes (after the freeze; dated)
+
+| date | note |
+|---|---|
+| 2026-11-03 | H9 box-counting statistic is INVALID as implemented: the pre-registered hidden-dim control (must be null) gives z of 24 to 71 in tiers A/B because the N3 null sd is degenerate (~1e-4). Box-counting rows in h09.csv are discounted; the H9 verdict rests on DFA/Hurst and block-variance only, which show smoothness (H > 1, slopes -0.4) on W_pos, token-id and RoPE-frequency axes, i.e. long-range correlation that the pre-registration assigns to H10, not self-similarity. Reported as: no evidence of fractal geometry. |
+| 2026-11-03 | H6 K-composition N1 null is not discriminative (57% of GPT-2 pairs pass 5 sigma). The H6 verdict rests on the previous-token statistic (RoPE form picks the true heads in both Pythias) and on the attention/M2 confirmation. Weight-only induction candidates coincide with attention-confirmed heads only in Pythia. |
+| 2026-11-03 | H6 RoPE statistic implemented as tr(W_Q R_{-delta} W_K^T C); the pre-registered expression was dimensionally inconsistent. |
