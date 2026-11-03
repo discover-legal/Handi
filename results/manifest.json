@@ -1,0 +1,151 @@
+{
+  "gpt2": {
+    "files": {
+      ".gitattributes": 445,
+      "64-8bits.tflite": 125162496,
+      "64-fp16.tflite": 248269688,
+      "64.tflite": 495791932,
+      "README.md": 8092,
+      "config.json": 665,
+      "flax_model.msgpack": 497764120,
+      "generation_config.json": 124,
+      "merges.txt": 456318,
+      "model.safetensors": 548105171,
+      "onnx/config.json": 879,
+      "onnx/decoder_model.onnx": 653665842,
+      "onnx/decoder_model_merged.onnx": 655189339,
+      "onnx/decoder_with_past_model.onnx": 653672649,
+      "onnx/generation_config.json": 119,
+      "onnx/merges.txt": 456318,
+      "onnx/special_tokens_map.json": 99,
+      "onnx/tokenizer.json": 2107653,
+      "onnx/tokenizer_config.json": 234,
+      "onnx/vocab.json": 798156,
+      "pytorch_model.bin": 548118077,
+      "rust_model.ot": 702517648,
+      "tf_model.h5": 497933648,
+      "tokenizer.json": 1355256,
+      "tokenizer_config.json": 26,
+      "vocab.json": 1042301
+    },
+    "local": "/home/hd/Documents/GitHub/Handi/models/hub/models--openai-community--gpt2/snapshots/607a30d783dfa663caf39e06633721c8d4cfcd7e",
+    "repo": "openai-community/gpt2",
+    "revision": "607a30d783dfa663caf39e06633721c8d4cfcd7e"
+  },
+  "pythia-160m": {
+    "files": {
+      ".gitattributes": 1477,
+      "README.md": 13593,
+      "config.json": 569,
+      "model.safetensors": 374998696,
+      "pytorch_model.bin": 375036845,
+      "special_tokens_map.json": 99,
+      "tokenizer.json": 2113710,
+      "tokenizer_config.json": 396
+    },
+    "local": "/home/hd/Documents/GitHub/Handi/models/hub/models--EleutherAI--pythia-160m/snapshots/50f5173d932e8e61f858120bcb800b97af589f46",
+    "repo": "EleutherAI/pythia-160m",
+    "revision": "50f5173d932e8e61f858120bcb800b97af589f46"
+  },
+  "pythia-70m": {
+    "files": {
+      ".gitattributes": 1477,
+      "README.md": 14256,
+      "config.json": 567,
+      "model.safetensors": 166029852,
+      "pytorch_model.bin": 166049099,
+      "special_tokens_map.json": 99,
+      "tokenizer.json": 2113710,
+      "tokenizer_config.json": 396
+    },
+    "local": "/home/hd/Documents/GitHub/Handi/models/hub/models--EleutherAI--pythia-70m/snapshots/a39f36b100fe8a5377810d56c3f4789b9c53ac42",
+    "repo": "EleutherAI/pythia-70m",
+    "revision": "a39f36b100fe8a5377810d56c3f4789b9c53ac42"
+  },
+  "qwen3.5-0.8b": {
+    "files": {
+      ".gitattributes": 1570,
+      "LICENSE": 11544,
+      "README.md": 61705,
+      "chat_template.jinja": 7755,
+      "config.json": 2907,
+      "merges.txt": 3353259,
+      "model.safetensors-00001-of-00001.safetensors": 1746942600,
+      "model.safetensors.index.json": 50900,
+      "preprocessor_config.json": 390,
+      "tokenizer.json": 12807982,
+      "tokenizer_config.json": 16709,
+      "video_preprocessor_config.json": 385,
+      "vocab.json": 6722759
+    },
+    "local": "/home/hd/Documents/GitHub/Handi/models/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+    "repo": "Qwen/Qwen3.5-0.8B",
+    "revision": "2fc06364715b967f1860aea9cf38778875588b17"
+  },
+  "tinystories-1m": {
+    "files": {
+      ".gitattributes": 1477,
+      "README.md": 710,
+      "config.json": 1021,
+      "merges.txt": 456318,
+      "pytorch_model.bin": 48578813,
+      "readme.md": 811,
+      "special_tokens_map.json": 438,
+      "tokenizer.json": 2107652,
+      "tokenizer_config.json": 722,
+      "vocab.json": 798156
+    },
+    "local": "/home/hd/Documents/GitHub/Handi/models/hub/models--roneneldan--TinyStories-1M/snapshots/77f1b168e219585646439073245fe87e56b3023e",
+    "repo": "roneneldan/TinyStories-1M",
+    "revision": "77f1b168e219585646439073245fe87e56b3023e"
+  },
+  "tinystories-33m": {
+    "files": {
+      ".gitattributes": 1477,
+      "README.md": 951,
+      "config.json": 968,
+      "merges.txt": 456318,
+      "pytorch_model.bin": 290854321,
+      "special_tokens_map.json": 438,
+      "tokenizer.json": 2107652,
+      "tokenizer_config.json": 722,
+      "vocab.json": 798156
+    },
+    "local": "/home/hd/Documents/GitHub/Handi/models/hub/models--roneneldan--TinyStories-33M/snapshots/2ad0a164221b7c4d21cac7c46aec74f6f98dbfc8",
+    "repo": "roneneldan/TinyStories-33M",
+    "revision": "2ad0a164221b7c4d21cac7c46aec74f6f98dbfc8"
+  },
+  "tinystories-3m": {
+    "files": {
+      ".gitattributes": 1477,
+      "README.md": 657,
+      "config.json": 1022,
+      "merges.txt": 456318,
+      "pytorch_model.bin": 66708541,
+      "readme.md": 811,
+      "special_tokens_map.json": 438,
+      "tokenizer.json": 2107652,
+      "tokenizer_config.json": 722,
+      "vocab.json": 798156
+    },
+    "local": "/home/hd/Documents/GitHub/Handi/models/hub/models--roneneldan--TinyStories-3M/snapshots/cfaf26ec85ecdfc1bd7c2638104cce55cb67f894",
+    "repo": "roneneldan/TinyStories-3M",
+    "revision": "cfaf26ec85ecdfc1bd7c2638104cce55cb67f894"
+  },
+  "tinystories-8m": {
+    "files": {
+      ".gitattributes": 1477,
+      "config.json": 1161,
+      "merges.txt": 456318,
+      "pytorch_model.bin": 112405309,
+      "readme.md": 657,
+      "special_tokens_map.json": 438,
+      "tokenizer.json": 2107652,
+      "tokenizer_config.json": 722,
+      "vocab.json": 798156
+    },
+    "local": "/home/hd/Documents/GitHub/Handi/models/hub/models--roneneldan--TinyStories-8M/snapshots/8612e3b15c66ffa94eaa6ee0de5c96edd2d630af",
+    "repo": "roneneldan/TinyStories-8M",
+    "revision": "8612e3b15c66ffa94eaa6ee0de5c96edd2d630af"
+  }
+}
