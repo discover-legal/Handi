@@ -66,6 +66,9 @@ def main() -> None:
                     else:
                         report = {}
                         weights = generators.CONDITIONS[cond](canon, cfg, fam, seed, model=name, report=report)
+                        if weights is None:
+                            print(f"{name:16s} {cond} seed={seed}: no circuit found by H6 for this model; condition not built", flush=True)
+                            continue
                         if report:
                             print(f"  build report {name} {cond} seed={seed}: {report}", flush=True)
                         model, tok = load_authored(name, weights)

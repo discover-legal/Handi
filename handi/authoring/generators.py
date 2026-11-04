@@ -72,7 +72,15 @@ def a1_spectrum(canon: dict[str, np.ndarray], cfg: dict, fam: str, seed: int, **
     rng = np.random.default_rng(seed)
     gen = torch.Generator().manual_seed(seed)
     out = {}
+    if couple_unembed and "unembed.w" in canon:
+        # coupled N6: one Gaussian draw shared by embed and unembed, so u_t is a fixed linear map of e_t
+        V = canon["embed.tok"].shape[0]
+        Z = rng.standard_normal((V, d))
+        out["embed.tok"] = _n6_from_z(canon["embed.tok"], Z)
+        out["unembed.w"] = _n6_from_z(canon["unembed.w"], Z)
     for k, W in canon.items():
+        if k in out:
+            continue
         if k in ("embed.tok", "unembed.w"):
             out[k] = n6_cov_matched(W, rng).astype(np.float32)
         elif W.ndim == 2:
@@ -313,7 +321,7 @@ def _identity_component_heads(out: dict, canon: dict, cfg: dict, fam: str, layer
 
 def build(canon: dict[str, np.ndarray], cfg: dict, fam: str, seed: int, *, model: str | None = None,
           ordered: bool = False, token_rank: bool = False, align: bool = False, identity: bool = False,
-          report: dict | None = None) -> dict[str, np.ndarray]:
+          couple_unembed: bool = False, report: dict | None = None) -> dict[str, np.ndarray]:
     """A1 core with optional confirmed patterns: ordered (H10 + H5), token_rank (H4), align (H7),
     identity (H3). A2 = ordered; A2F = ordered + token_rank; A3 = ordered + align + identity."""
     rng = np.random.default_rng(seed)
@@ -329,7 +337,15 @@ def build(canon: dict[str, np.ndarray], cfg: dict, fam: str, seed: int, *, model
         if report is not None:
             report["shared_dim"] = m
     out = {}
+    if couple_unembed and "unembed.w" in canon:
+        # coupled N6: one Gaussian draw shared by embed and unembed, so u_t is a fixed linear map of e_t
+        V = canon["embed.tok"].shape[0]
+        Z = rng.standard_normal((V, d))
+        out["embed.tok"] = _n6_from_z(canon["embed.tok"], Z)
+        out["unembed.w"] = _n6_from_z(canon["unembed.w"], Z)
     for k, W in canon.items():
+        if k in out:
+            continue
         if k in ("embed.tok", "unembed.w"):
             out[k] = n6_cov_matched(W, rng).astype(np.float32)
         elif k == "embed.pos" and ordered:
@@ -390,6 +406,25 @@ def build(canon: dict[str, np.ndarray], cfg: dict, fam: str, seed: int, *, model
     return out
 
 
+def _n6_from_z(E: np.ndarray, Z: np.ndarray) -> np.ndarray:
+    E = np.asarray(E, dtype=np.float64)
+    mu = E.mean(axis=0)
+    C = np.cov(E, rowvar=False)
+    evals, evecs = np.linalg.eigh(C)
+    C_half = (evecs * np.sqrt(np.clip(evals, 0.0, None))[None, :]) @ evecs.T
+    return (Z @ C_half + mu[None, :]).astype(np.float32)
+
+
+def a4_circuit(canon, cfg, fam, seed, model=None, report=None):
+    """A3 + explicit previous-token / induction circuit where H6 found one; None where it did not."""
+    from .circuits import CIRCUITS, tune_and_install
+    if model not in CIRCUITS:
+        return None
+    w = build(canon, cfg, fam, seed, model=model, ordered=True, align=True, identity=True, couple_unembed=True,
+              report=report)
+    return tune_and_install(w, canon, cfg, fam, model, seed, device="cpu", report=report)
+
+
 def a2_ordered(canon, cfg, fam, seed, model=None, report=None):
     return build(canon, cfg, fam, seed, model=model, ordered=True, report=report)
 
@@ -402,4 +437,5 @@ def a3_aligned(canon, cfg, fam, seed, model=None, report=None):
     return build(canon, cfg, fam, seed, model=model, ordered=True, align=True, identity=True, report=report)
 
 
-CONDITIONS = {"A0": a0_fresh, "A1": a1_spectrum, "A2": a2_ordered, "A2F": a2f_ordered_freq, "A3": a3_aligned}
+CONDITIONS = {"A0": a0_fresh, "A1": a1_spectrum, "A2": a2_ordered, "A2F": a2f_ordered_freq, "A3": a3_aligned,
+              "A4": a4_circuit}

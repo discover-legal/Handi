@@ -70,3 +70,10 @@ of the two label strings; at most 500 items per task (fixed seed subsample where
 - Known deviation: the authored GPT-2 position curve has neighbour ratio 0.10 against 0.04 trained (random
   phases lose the trained phase coherence across PCs); TinyStories within 0.06.
 
+## Gaps found while building A4 (2026-11-04; undecided)
+
+| date | gap |
+|---|---|
+| 2026-11-04 | **A4 cannot be hosted in A3 as defined.** The explicit previous-token + induction circuit (handi/authoring/circuits.py, placed at the H6 heads) is verified in isolation: on Pythia-70M with every other layer's residual write silenced it copies 92% of a repeated random sequence (previous-token attention 1.00, induction attention 0.99). Inside the real A3 weight set it copies 0%: the spectrum-matched random layers write junk into the residual at 20-100x the token-embedding norm, so at the circuit's layers only ~3% of what a head can read is token identity (trained models have the same residual norms but keep token identity in dedicated subspaces; random layers pollute every subspace equally). Attenuating all non-circuit output writes (attn.o, mlp.down) by a factor s gives copy accuracy s=0.1: 1%, s=0.03: 59%, s=0.01: 89%. Options: (a) define A4 as A3 with non-circuit writes attenuated by a stated s, reported as such; (b) report A4 as not buildable on A3 and the circuit reading as validated only in isolation. Not built until decided. |
+| 2026-11-04 | **No authored previous-token head for learned-position models (GPT-2, TinyStories).** A rank-hd bilinear form fitted on the authored position curve to a lag-1 target reaches 85% lag-1 argmax on pure positions (the same on the trained W_pos), but 5% inside the model: token embeddings project onto the position subspace at the random rate (trained GPT-2 measured 0.083 = 64/768, no orthogonality to exploit), and the lag-1 score gap is of the order of the score scale. RoPE models (Pythia, Qwen) have a clean design (constant q/k on the rotary pairs with a one-position phase offset) and are unaffected. Without an owner-approved design A4 is RoPE-only. |
+
