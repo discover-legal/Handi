@@ -55,7 +55,40 @@ OVERRIDE = {
 }
 
 
+def summarize_h15(rows: list[dict]) -> tuple[str, list[str]]:
+    """H15's own rule (hypotheses.md section 7): s1_extrapolate z >= 5 against the random-turn null AND
+    s1 > s1_stay, for readers or writers at k=32, in >= 2 tiers."""
+    val = {}
+    for r in rows:
+        if r["layer"] == "ALL" and r["component"].endswith(":k32"):
+            val[(r["model"], r["component"], r["metric"])] = (fnum(r["value"]), fnum(r["z"]), fnum(r["null_mean"]))
+    lines, tiers_ok = [], set()
+    for model in MODELS:
+        cells = []
+        for side in ("readers", "writers"):
+            comp = f"{side}:k32"
+            s1 = val.get((model, comp, "s1_extrapolate"))
+            stay = val.get((model, comp, "s1_stay"))
+            s2 = val.get((model, comp, "s2_turn_overlap"))
+            if not s1 or not stay:
+                continue
+            ok = s1[1] is not None and s1[1] >= 5 and s1[0] > stay[0]
+            cells.append(f"{side}: S1={s1[0]:.3f} vs random-turn {s1[2]:.3f} (z {s1[1]:+.1f}), stay={stay[0]:.3f}, "
+                         f"turn-overlap S2={s2[0]:.3f} vs chance {s2[2]:.3f} (z {s2[1]:+.1f}) -> {'PASS' if ok else 'fail'}")
+            if ok:
+                tiers_ok.add(MODELS[model]["tier"])
+        if cells:
+            lines.append(f"- {model}: " + "; ".join(cells))
+    verdict = "CONFIRMED" if len(tiers_ok) >= 2 else "REFUTED"
+    lines.append("- Rule: PASS needs S1 z >= 5 AND S1 > stay. The turn direction beats a random direction almost everywhere, "
+                 "but applying the same turn again never beats staying where the previous layer is, so there is no usable "
+                 "generative rule; S2 shows consecutive turns come from different (mostly anti-aligned) new directions.")
+    return verdict, lines
+
+
 def summarize_hypothesis(hyp: str, rows: list[dict]) -> tuple[str, list[str]]:
+    if hyp == "H15":
+        return summarize_h15(rows)
     excl = EXCLUDED.get(hyp)
     if excl:
         rows = [r for r in rows if not r["metric"].startswith(excl[0])]

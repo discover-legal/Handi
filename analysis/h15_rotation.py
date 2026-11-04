@@ -8,7 +8,7 @@ Geodesic on the Grassmannian from P_a to P_b (Edelman, Arias, Smith 1998):
     Q = P_b (P_a^T P_b)^{-1} - P_a = U tan(Theta) V^T,   Gamma(t) = P_a V cos(Theta t) + U sin(Theta t)
 Gamma(1) spans P_b; Gamma(2) is "the same turn again". Overlap ov(A, B) = ||A^T B||_F^2 / k.
 
-Statistics (per model, per side, per k in {8, 32} with k < d/2):
+Statistics (per model, per side, per k in {8, 32} with k < d):
   s1_extrapolate   mean_l ov(Gamma_{l->l+1}(2), P_{l+2})          null: random turn (same Theta, Haar U in the
                                                                   complement of P_l, Haar V), 200 draws
   s1_stay          mean_l ov(P_{l+1}, P_{l+2})                     baseline, no rule (what H7 / A3 assume)
@@ -157,7 +157,7 @@ def main() -> None:
             fig, axes = plt.subplots(1, 2, figsize=(10, 3.6))
             for side, mats, sv_side, types in (("readers", readers, "right", READER_TYPES), ("writers", writers, "left", WRITER_TYPES)):
                 for k in KS:
-                    if k >= d / 2:
+                    if k >= d:
                         continue
                     gen = torch.Generator().manual_seed(args.seed)
                     P = [top_basis(M, k, sv_side) for M in mats]
