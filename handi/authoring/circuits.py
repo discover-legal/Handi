@@ -40,12 +40,13 @@ from ..analysis import registry
 from ..canon import from_canonical
 
 # (layer, head) of the previous-token head and of the induction head, from results/tables/h06.csv
+# GPT-2 (4, 11), (5, 5) is excluded: no authored previous-token design for learned positions (decisions.md gap)
 CIRCUITS = {
-    "gpt2": ((4, 11), (5, 5)),
     "pythia-70m": ((2, 1), (3, 6)),
     "pythia-160m": ((3, 2), (4, 6)),
     "qwen3.5-0.8b": ((7, 0), (15, 7)),
 }
+ATTENUATION = 0.01   # decision of 2026-11-04: non-circuit residual writes in A4 are scaled by this factor
 TUNE_SEED = 123
 N_TUNE = 20
 LENGTH = 50
@@ -95,6 +96,9 @@ class Circuit:
         self.rot, self.inv_freq = _rotary(cfg, fam, self.hd)
         self.learned_pos = "embed.pos" in canon
         self.tied = "unembed.w" not in canon
+        from ..analysis.loader import attn_layers, n_layers
+        self.attn_layer_ids = attn_layers(cfg, fam)
+        self.n_layers = n_layers(cfg, fam)
 
     # ------------------------------------------------------------------ pieces that do not depend on gains
     def prepare(self, w: dict[str, np.ndarray]) -> None:
@@ -256,17 +260,40 @@ def _score(model, x: torch.Tensor, circ: Circuit) -> tuple[float, float, float]:
     other = logits.scatter(-1, tgt[..., None], float("-inf")).max(-1).values
     _score.last_margin = float((correct - other).mean())
     T = x.shape[1] - 1
-    att_p = out.attentions[circ.lp][:, circ.hp]                      # [B, T, T]
+    att = out.attentions
+    if len(att) != circ.n_layers:                                     # Qwen returns only the full-attention layers
+        att = {l: a for l, a in zip(circ.attn_layer_ids, att)}
+    att_p = att[circ.lp][:, circ.hp]                                 # [B, T, T]
     idx = torch.arange(1, T)
     prev = float(att_p[:, idx, idx - 1].mean())
-    att_i = out.attentions[circ.li][:, circ.hi]
+    att_i = att[circ.li][:, circ.hi]
     idx2 = torch.arange(LENGTH, T)
     ind = float(att_i[:, idx2, idx2 - LENGTH + 1].mean())
     return acc, prev, ind
 
 
+def attenuate(w: dict[str, np.ndarray], cfg: dict, fam: str, model_name: str, s: float = ATTENUATION) -> dict:
+    """Scale every residual write that is not one of the two circuit heads by s (A4 definition)."""
+    w = dict(w)
+    (lp, hp), (li, hi) = CIRCUITS[model_name]
+    _, _, _, hd = _dims(cfg, fam)
+    for k in list(w):
+        if k.endswith((".mlp.down.w", ".mlp.down.b", ".linear.out.w", ".attn.o.b")):
+            w[k] = (w[k] * s).astype(np.float32)
+        elif k.endswith(".attn.o.w"):
+            layer = int(k.split(".")[1])
+            keep = [hp] if layer == lp else ([hi] if layer == li else [])
+            m = np.full_like(w[k], s)
+            for h in keep:
+                m[:, h * hd:(h + 1) * hd] = 1.0
+            w[k] = (w[k] * m).astype(np.float32)
+    return w
+
+
 def tune_and_install(w: dict[str, np.ndarray], canon: dict, cfg: dict, fam: str, model_name: str, seed: int,
-                     device: str = "cpu", report: dict | None = None) -> dict[str, np.ndarray]:
+                     device: str = "cpu", report: dict | None = None, attenuation: float | None = ATTENUATION) -> dict[str, np.ndarray]:
+    if attenuation is not None:
+        w = attenuate(w, cfg, fam, model_name, attenuation)
     circ = Circuit(canon, cfg, fam, model_name, seed)
     circ.prepare(w)
     model, _ = _load_once(model_name, device)
@@ -298,6 +325,6 @@ def tune_and_install(w: dict[str, np.ndarray], canon: dict, cfg: dict, fam: str,
     acc, prev, ind = _score(model, x, circ)
     if report is not None:
         report.update({"a4_params": params, "a4_tune_copy_acc": acc, "a4_prev_attn": prev, "a4_induction_attn": ind,
-                       "a4_logit_margin": _score.last_margin, "a4_heads": CIRCUITS[model_name]})
+                       "a4_logit_margin": _score.last_margin, "a4_heads": CIRCUITS[model_name], "a4_attenuation": attenuation})
     del model
     return final
