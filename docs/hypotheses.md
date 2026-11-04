@@ -183,3 +183,14 @@ Qwen-specific: Gated DeltaNet projection matrices get H1/H3/H5/H7/H12; the Delta
 3. Nulls, spectra, stats, results writer; MP closed form unit-checked on Gaussians.
 4. **Freeze this document.**
 5. H1, H3, H4, H5, H12. 6. H6, H7, H10. 7. H9, H11, H8. 8. H2. 9. Rung 2. 10. Summary and H13 verdict.
+
+## 7. Amendments after the freeze
+
+### H14. Spectral mixture decomposition (project hypothesis; added 2026-11-04, after H1-H11 results were seen, before any H14 measurement)
+- **Motivation.** Spectroscopy identifies a mixture by decomposing its spectrum into a few known component spectra. The weight analogue: the normalized singular-value profile of every weight matrix is a non-negative mixture of a small number of component profiles that recur across matrix types and across models.
+- **Statement.** (a) With K <= 8 components learned from the other seven models, a held-out model's profiles are reconstructed far better than with K components learned from Gaussian random matrices of the same shapes. (b) The mixing weights identify the matrix type (attn.q, mlp.up, ...) of a held-out model's matrices far above chance.
+- **Measurement.** Profile p = -log10(sigma(t)/sigma_1) on a 128-point grid of t = i/n in (0, 1], for every 2-D weight matrix with min(n, m) >= 32 (singular values from the H1 raw store). Non-negative matrix factorization X ~ W H (multiplicative updates, Frobenius loss, fixed seed) with K in {1, 2, 3, 4, 6, 8} on the profiles of seven models; held-out model's weights by non-negative least squares; statistic S1 = held-out explained variance. S2 = leave-one-model-out nearest-centroid accuracy of matrix type from the K normalized weights (types present in >= 2 models only). S3 (descriptive) = mean purity (largest weight share) and the component-by-type weight table.
+- **Nulls.** S1: N1 library, components fitted to 20 draws of Gaussian matrices of the same shapes as the seven training models (profiles depend only on shape under N1); z from the 20 draws. S2: label permutation, 200 shuffles.
+- **Confirmed if** S1 z >= 5 for some K <= 8 in at least 2 of 3 tiers (per held-out model), and S2 z >= 5. **Refuted if** the trained library explains held-out profiles no better than the N1 library (the H8 collapse is then just "everything is MP plus a tail").
+- **Relation to H8.** H8 compares profiles pairwise per type; H14 asks whether a shared low-dimensional basis exists across types and models. Qwen's DeltaNet-only types (linear.*) are out of library when Qwen is held out and are reported separately.
+- **Prior.** (a) ~50%; (b) ~80%. Reconstruction of function from such components is not claimed (H2 shows function lives in the singular vectors).
