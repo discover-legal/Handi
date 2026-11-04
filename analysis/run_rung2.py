@@ -64,7 +64,10 @@ def main() -> None:
                     if cond == "A5":
                         model, tok = load_trained(name)
                     else:
-                        weights = generators.CONDITIONS[cond](canon, cfg, fam, seed)
+                        report = {}
+                        weights = generators.CONDITIONS[cond](canon, cfg, fam, seed, model=name, report=report)
+                        if report:
+                            print(f"  build report {name} {cond} seed={seed}: {report}", flush=True)
                         model, tok = load_authored(name, weights)
                     res = evaluate_all(model, tok, a.which, a.m1_tokens)
                     rows_from(res, w, hypothesis="H13", model=name, family=fam, layer="ALL", component=cond,

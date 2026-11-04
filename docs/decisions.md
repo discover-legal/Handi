@@ -47,3 +47,26 @@ of the two label strings; at most 500 items per task (fixed seed subsample where
 | 2026-11-03 | H6 K-composition N1 null is not discriminative (57% of GPT-2 pairs pass 5 sigma). The H6 verdict rests on the previous-token statistic (RoPE form picks the true heads in both Pythias) and on the attention/M2 confirmation. Weight-only induction candidates coincide with attention-confirmed heads only in Pythia. |
 | 2026-11-03 | H6 RoPE statistic implemented as tr(W_Q R_{-delta} W_K^T C); the pre-registered expression was dimensionally inconsistent. |
 | 2026-11-04 | Owner added H14 (spectral mixture decomposition) as a post-freeze hypothesis after seeing H1-H11 results; text in hypotheses.md section 7; measured by analysis/h14_mixture.py. Not pre-registered: reported as exploratory with its own nulls. |
+
+## Rung 2 builder defaults for A2 / A2F / A3 (chosen 2026-11-04 before any A2/A3 run; may be overridden)
+
+- **A2 = A1 + H10 + H5.** W_pos: uncentered SVD of the trained W_pos; every position-series PC keeps its |FFT|
+  with random phases (DC and Nyquist kept real), no re-orthonormalization (it destroys the smoothness),
+  residual directions Haar. Outlier dims: one random permutation of residual dims per seed shared by every
+  layer; every reader matrix's column norms and writer matrix's row norms, and every residual-indexed vector
+  (LN gains/biases, o/down biases), are set to the trained profile at the permuted dims; the N6 embedding's
+  columns are permuted the same way so the covariance's large dims coincide.
+- **A2F = A2 + H4.** PC1 of the N6 embeddings (oriented along the mean) is re-assigned across tokens so that
+  its Spearman correlation with token id equals the trained value (rank assignment by the smoothed trained
+  PC1-vs-id curve plus noise, noise level bisected to the measured correlation). Reported on its own line, as
+  pre-registered; A3 builds on A2, not A2F.
+- **A3 = A2 + H7 + H3.** Shared residual subspace: one Haar basis of dimension m = round(32 / overlap) with
+  overlap = h07 `readers:all_crosslayer:full` at k=32 (GPT-2 m=267, Pythia 384, Qwen 464, TinyStories-1M 62);
+  the top-32 right singular vectors of every reader and left singular vectors of every writer are Haar inside
+  that subspace, the rest Haar in its complement; singular values from N5. Identity components: for each head,
+  Q is rebuilt from K (same head-dim basis, right subspace = beta*V_K + sqrt(1-beta^2)*Haar, beta bisected so
+  that cos_F(W_QK, I) equals the head's h03 value) and O from V likewise for W_OV; Q and O singular values
+  from the trained blocks. Achieved cos_F within 0.005 of the measured value on average after the H5 rescale.
+- Known deviation: the authored GPT-2 position curve has neighbour ratio 0.10 against 0.04 trained (random
+  phases lose the trained phase coherence across PCs); TinyStories within 0.06.
+
