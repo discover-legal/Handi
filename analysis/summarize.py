@@ -129,10 +129,12 @@ def h13_verdict(rows: list[dict]) -> list[str]:
         if r["metric"].startswith("m4_") and fnum(r["ks"]) is not None:
             maj[(r["model"], r["metric"])] = fnum(r["ks"])
     tiers = lambda models: {MODELS[m]["tier"] for m in models}
-    authored = ("A2", "A2F", "A3", "A4")
+    authored = ("A2", "A2F", "A3", "A4", "A6", "A7")
+    post = {"A4", "A6", "A7"}      # post-freeze lines: reported on their own, not counted in the H13 verdict
     null_ok, weak_hits, strong_hits, law_hits, vs_a0_hits = [], defaultdict(set), defaultdict(set), [], defaultdict(set)
-    out.append("| model | A0 CE | A1 CE | A2 CE | A2F CE | A3 CE | A4 CE | unigram | A5 |")
-    out.append("|---|---|---|---|---|---|---|---|---|")
+    vs_a3_hits = defaultdict(set)
+    out.append("| model | A0 CE | A1 CE | A2 CE | A2F CE | A3 CE | A4 CE | A6 CE | A7 CE | unigram | A5 |")
+    out.append("|---|---|---|---|---|---|---|---|---|---|---|")
     for model, conds in by.items():
         def ce(cond):
             vs = conds.get(cond, {}).get("m1_ce_wikitext", [])
@@ -140,7 +142,8 @@ def h13_verdict(rows: list[dict]) -> list[str]:
         a0, a1 = ce("A0"), ce("A1")
         uni = conds.get("A5", {}).get("m1_ref_unigram_wikitext", [None])[0]
         cells = []
-        for cond in ("A0", "A1", "A2", "A2F", "A3", "A4"):
+        a3 = ce("A3")
+        for cond in ("A0", "A1", "A2", "A2F", "A3", "A4", "A6", "A7"):
             c = ce(cond)
             cells.append("-" if c is None else f"{c[0]:.2f} [{c[1]:.2f}, {c[2]:.2f}]")
         a5 = ce("A5")
@@ -156,6 +159,8 @@ def h13_verdict(rows: list[dict]) -> list[str]:
                 weak_hits[cond].add(model)
             if a0 and c[0] <= a0[0] - 0.2 and c[2] < a0[1]:
                 vs_a0_hits[cond].add(model)
+            if a3 and c[0] <= a3[0] - 0.2 and c[2] < a3[1]:
+                vs_a3_hits[cond].add(model)
             if uni is not None and c[0] <= uni and cond != "A2F":
                 strong_hits[cond].add(model)
             for metric, vs in conds[cond].items():
@@ -168,13 +173,13 @@ def h13_verdict(rows: list[dict]) -> list[str]:
                ("holds in " + ", ".join(m for m, w in null_ok if w) if any(w for _, w in null_ok) else "holds in no model") +
                "; fails in " + (", ".join(m for m, w in null_ok if not w) or "none") +
                ". Where it fails, A1-A3 are far WORSE than A0 (large singular values on random directions give confident wrong logits), not better.")
-    weak = {c: ms for c, ms in weak_hits.items() if len(tiers(ms)) >= 2 and c != "A4"}
+    weak = {c: ms for c, ms in weak_hits.items() if len(tiers(ms)) >= 2 and c not in post}
     out.append(f"- Positive-weak (some A_k, k<=3, beats A1 by >= 0.2 nat with non-overlapping CIs in >= 2 tiers): "
                + (", ".join(f"{c} in {sorted(ms)}" for c, ms in weak.items()) if weak else "NONE"))
-    vs0 = {c: ms for c, ms in vs_a0_hits.items() if c != "A4"}
+    vs0 = {c: ms for c, ms in vs_a0_hits.items() if c not in post}
     out.append(f"- Same test against A0 instead of A1 (diagnostic, not a verdict): "
                + (", ".join(f"{c} in {sorted(ms)}" for c, ms in vs0.items()) if vs0 else "NONE"))
-    strong = {c: ms for c, ms in strong_hits.items() if c != "A4"}
+    strong = {c: ms for c, ms in strong_hits.items() if c not in post}
     out.append(f"- Positive-strong (some A_k, k<=3, reaches the unigram line without token-identity input): "
                + (", ".join(f"{c} in {sorted(ms)}" for c, ms in strong.items()) if strong else "NONE"))
     a2f = strong_hits.get("A2F") or set()
@@ -194,6 +199,17 @@ def h13_verdict(rows: list[dict]) -> list[str]:
     if a4:
         out.append("- A4 (explicit circuit; reported separately, does not count toward H13): copy accuracy "
                    + ", ".join(f"{m}={_mean_ci(v)[0]:.2f}" for m, v in a4.items() if v))
+    def post_line(cond, hyp, ref, hits):
+        ms = hits.get(cond) or set()
+        ok = len(tiers(ms)) >= 2
+        have = sorted(m for m, conds in by.items() if cond in conds)
+        if not have:
+            return f"- {cond} ({hyp}, post-freeze): not run yet"
+        return (f"- {cond} ({hyp}, post-freeze, reported separately) vs {ref} by the positive-weak test: "
+                + (f"passes in {sorted(ms)}" if ms else "passes nowhere") + f" -> {hyp} {'CONFIRMED' if ok else 'NOT confirmed'}"
+                + f"; vs A1: {sorted(weak_hits.get(cond) or set()) or 'none'}; vs A0: {sorted(vs_a0_hits.get(cond) or set()) or 'none'}")
+    out.append(post_line("A6", "H15 applied", "A3", vs_a3_hits))
+    out.append(post_line("A7", "H16", "A1", weak_hits))
     verdict = "NULL" if not weak and not strong else "POSITIVE"
     out.append(f"- **H13 verdict: {verdict}**" + (" (the pre-registered null clause is violated in the wrong direction: A1 is worse than A0; "
                "no authored condition beats either baseline)" if verdict == "NULL" else ""))

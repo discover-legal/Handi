@@ -25,8 +25,15 @@ from ..analysis.nulls import n4_fresh_init, n5_spectrum_matched, n6_cov_matched
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def _haar(m: int, k: int, gen: torch.Generator) -> torch.Tensor:
-    g = torch.randn(m, k, generator=gen).to(DEVICE)
+def _randn(m: int, k: int, gen) -> torch.Tensor:
+    """Gaussian [m, k] on DEVICE from a torch.Generator, or from a draw source with .normal() (A7)."""
+    if hasattr(gen, "normal"):
+        return gen.normal(m, k)
+    return torch.randn(m, k, generator=gen).to(DEVICE)
+
+
+def _haar(m: int, k: int, gen) -> torch.Tensor:
+    g = _randn(m, k, gen)
     q, r = torch.linalg.qr(g)
     return q * torch.sign(torch.diagonal(r))[None, :]
 
@@ -72,12 +79,6 @@ def a1_spectrum(canon: dict[str, np.ndarray], cfg: dict, fam: str, seed: int, **
     rng = np.random.default_rng(seed)
     gen = torch.Generator().manual_seed(seed)
     out = {}
-    if couple_unembed and "unembed.w" in canon:
-        # coupled N6: one Gaussian draw shared by embed and unembed, so u_t is a fixed linear map of e_t
-        V = canon["embed.tok"].shape[0]
-        Z = rng.standard_normal((V, d))
-        out["embed.tok"] = _n6_from_z(canon["embed.tok"], Z)
-        out["unembed.w"] = _n6_from_z(canon["unembed.w"], Z)
     for k, W in canon.items():
         if k in out:
             continue
@@ -143,7 +144,7 @@ def _orth_complement_haar(V0: torch.Tensor, r: int, gen: torch.Generator) -> tor
     d = V0.shape[0]
     if r == 0:
         return torch.zeros(d, 0, device=DEVICE)
-    Z = torch.randn(d, r, generator=gen).to(DEVICE)
+    Z = _randn(d, r, gen)
     Z = Z - V0 @ (V0.T @ Z)
     q, rr = torch.linalg.qr(Z)
     return q * torch.sign(torch.diagonal(rr))[None, :]
@@ -321,21 +322,39 @@ def _identity_component_heads(out: dict, canon: dict, cfg: dict, fam: str, layer
 
 def build(canon: dict[str, np.ndarray], cfg: dict, fam: str, seed: int, *, model: str | None = None,
           ordered: bool = False, token_rank: bool = False, align: bool = False, identity: bool = False,
-          couple_unembed: bool = False, report: dict | None = None) -> dict[str, np.ndarray]:
+          couple_unembed: bool = False, chain: bool = False, fill: str = "gaussian",
+          report: dict | None = None) -> dict[str, np.ndarray]:
     """A1 core with optional confirmed patterns: ordered (H10 + H5), token_rank (H4), align (H7),
-    identity (H3). A2 = ordered; A2F = ordered + token_rank; A3 = ordered + align + identity."""
+    identity (H3). A2 = ordered; A2F = ordered + token_rank; A3 = ordered + align + identity.
+    chain (A6, H15): align with a per-layer rotated subspace S_l = R^l S_0 instead of one shared subspace.
+    fill="golden" (A7, H16): every random draw replaced by the golden-ratio sequence (see GoldenSource)."""
     rng = np.random.default_rng(seed)
     gen = torch.Generator().manual_seed(seed)
+    if fill == "golden":
+        src = GoldenSource(seed)
+        gen = src                      # Haar bases and spectrum-matched matrices draw from the sequence
+        rng = src                      # standard_normal / permutation too
+    elif fill != "gaussian":
+        raise ValueError(f"unknown fill {fill!r}")
     d = _d_model(cfg, fam)
     shared = None
+    layer_sub = None
     if align:
         if model is None:
             raise ValueError("align needs the model name to read h07.csv")
         ov = _h07_overlap(model)
         m = int(np.clip(round(K_ALIGN / ov), K_ALIGN, d))
-        shared = _haar(d, m, gen)
-        if report is not None:
-            report["shared_dim"] = m
+        if chain:
+            m, phi, S0, R, fit = _fit_chain(model, d, m, _n_layers(cfg, fam), gen)
+            layer_sub = [S0]
+            for _ in range(_n_layers(cfg, fam) - 1):
+                layer_sub.append(R @ layer_sub[-1])
+            if report is not None:
+                report.update(chain_dim=m, chain_phi_deg=float(np.degrees(phi)), **fit)
+        else:
+            shared = _haar(d, m, gen)
+            if report is not None:
+                report["shared_dim"] = m
     out = {}
     if couple_unembed and "unembed.w" in canon:
         # coupled N6: one Gaussian draw shared by embed and unembed, so u_t is a fixed linear map of e_t
@@ -347,20 +366,24 @@ def build(canon: dict[str, np.ndarray], cfg: dict, fam: str, seed: int, *, model
         if k in out:
             continue
         if k in ("embed.tok", "unembed.w"):
-            out[k] = n6_cov_matched(W, rng).astype(np.float32)
+            if fill == "golden":
+                out[k] = _n6_from_z(W, rng.standard_normal(W.shape))
+            else:
+                out[k] = n6_cov_matched(W, rng).astype(np.float32)
         elif k == "embed.pos" and ordered:
             out[k] = _phase_randomized_positions(W, gen)
         elif W.ndim == 2:
             if align and (_is_reader(k) or _is_writer(k)):
+                sub = shared if layer_sub is None else layer_sub[int(k.split(".")[1])]
                 T = torch.from_numpy(np.ascontiguousarray(W, dtype=np.float32)).to(DEVICE)
                 mm, nn = T.shape
                 s = _svals(T)
                 kf = len(s)
                 if _is_reader(k):
-                    V = _aligned_basis(nn, kf, shared, gen)
+                    V = _aligned_basis(nn, kf, sub, gen)
                     U = _haar(mm, kf, gen)
                 else:
-                    U = _aligned_basis(mm, kf, shared, gen)
+                    U = _aligned_basis(mm, kf, sub, gen)
                     V = _haar(nn, kf, gen)
                 out[k] = ((U * s[None, :]) @ V.T).cpu().numpy()
             else:
@@ -425,6 +448,124 @@ def a4_circuit(canon, cfg, fam, seed, model=None, report=None):
     return tune_and_install(w, canon, cfg, fam, model, seed, device="cpu", report=report)
 
 
+# --------------------------------------------------------------------------------------------
+# A6 (H15 applied): per-layer rotated subspace chain;  A7 (H16): golden-ratio fill
+# --------------------------------------------------------------------------------------------
+
+def _n_layers(cfg: dict, fam: str) -> int:
+    return cfg.get("n_layer") or cfg.get("num_layers") or cfg.get("num_hidden_layers")
+
+
+def _h15_targets(model: str) -> tuple[float, float]:
+    """Trained per-matrix reader overlaps at k=32 from h15.csv: (lag-1 mean, all-pair mean)."""
+    import csv
+    lag1 = allp = None
+    with open(TABLES / "h15.csv") as fh:
+        for r in csv.DictReader(fh):
+            if r["model"] != model or r["component"] != "readers:k32":
+                continue
+            if r["metric"] == "matrix_lag_overlap" and r["layer"] == "1":
+                lag1 = float(r["value"])
+            elif r["metric"] == "matrix_allpair_overlap":
+                allp = float(r["value"])
+    if lag1 is None or allp is None:
+        raise KeyError(f"{model}: readers:k32 matrix_lag_overlap / matrix_allpair_overlap not in h15.csv")
+    return lag1, allp
+
+
+def _chain_overlaps(Gm: torch.Tensor, R: torch.Tensor, L: int, k: int) -> np.ndarray:
+    """Expected k-subspace overlap at lags 1..L-1 for Haar k-bases inside S_0 = Gm and S_j = R^j S_0:
+    ov_j = (k / m^2) ||S_0^T R^j S_0||_F^2."""
+    m = Gm.shape[1]
+    S = Gm
+    out = np.zeros(L)
+    for j in range(1, L):
+        S = R @ S
+        out[j] = float((Gm.T @ S).pow(2).sum()) * k / (m * m)
+    return out
+
+
+def _fit_chain(model: str, d: int, m0: int, L: int, gen, k: int = K_ALIGN):
+    """Choose (m, phi) so that lag-1 and all-pair expected reader overlaps match the trained values (h15.csv).
+    Grid over phi in [0, pi/2] (33 points), m bisected at each phi, pick the least squared relative error.
+    Returns (m, phi, S_0 [d, m], R [d, d], fit report)."""
+    lag1_t, all_t = _h15_targets(model)
+    Bfull = _haar(d, d, gen)
+    Bplanes = _haar(d, d, gen)
+    weights = np.array([0] + [L - j for j in range(1, L)], dtype=float)
+
+    def rot(phi):
+        """Rotation by phi in d/2 Haar 2-planes (odd d: one fixed axis)."""
+        G = np.eye(d, dtype=np.float32)
+        c, s_ = math.cos(phi), math.sin(phi)
+        i = np.arange(0, d - 1, 2)
+        G[i, i] = c; G[i + 1, i + 1] = c; G[i, i + 1] = -s_; G[i + 1, i] = s_
+        return Bplanes @ torch.from_numpy(G).to(DEVICE) @ Bplanes.T
+
+    best = None
+    for phi in np.linspace(0, math.pi / 2, 33):
+        R = rot(phi)
+        lo, hi = k, d
+        for _ in range(12):
+            mid = (lo + hi) // 2
+            o = _chain_overlaps(Bfull[:, :mid], R, L, k)
+            if o[1] > lag1_t:
+                lo = mid + 1
+            else:
+                hi = mid
+        for m in {max(k, lo - 1), lo, min(d, lo + 1)}:
+            o = _chain_overlaps(Bfull[:, :m], R, L, k)
+            allp = float((o * weights).sum() / weights.sum())
+            err = ((o[1] - lag1_t) / lag1_t) ** 2 + ((allp - all_t) / all_t) ** 2
+            if best is None or err < best[0]:
+                best = (err, m, float(phi), R, o[1], allp)
+    err, m, phi, R, l1, allp = best
+    fit = dict(chain_target_lag1=lag1_t, chain_target_allpair=all_t, chain_fit_lag1=float(l1), chain_fit_allpair=float(allp),
+               chain_fit_err=float(err), chain_m_a3=m0)
+    return m, phi, Bfull[:, :m].contiguous(), R, fit
+
+
+class GoldenSource:
+    """Deterministic stand-in for the Gaussian draws (H16 / A7): u_n = frac((n + 2^24 seed) phi), phi the golden
+    ratio, consumed in order; z = ndtri(u) so the marginal distribution is the standard normal. Exposes the
+    methods the builder uses on torch.Generator / numpy Generator: normal (torch, on DEVICE), standard_normal
+    (numpy float64), permutation (argsort of the next n values)."""
+    PHI = (1 + 5 ** 0.5) / 2
+
+    def __init__(self, seed: int):
+        self.n = int(seed) * (1 << 24)
+
+    def uniform(self, numel: int) -> torch.Tensor:
+        idx = torch.arange(self.n, self.n + numel, dtype=torch.float64)
+        self.n += numel
+        u = torch.frac(idx * self.PHI)
+        return u.clamp(1e-10, 1 - 1e-10)
+
+    def normal(self, *shape) -> torch.Tensor:
+        numel = int(np.prod(shape))
+        return torch.special.ndtri(self.uniform(numel)).reshape(shape).float().to(DEVICE)
+
+    def standard_normal(self, shape) -> np.ndarray:
+        shape = (shape,) if isinstance(shape, int) else tuple(shape)
+        numel = int(np.prod(shape))
+        return torch.special.ndtri(self.uniform(numel)).reshape(shape).numpy()
+
+    def permutation(self, x):
+        n = x if isinstance(x, int) else len(x)
+        idx = torch.argsort(self.uniform(n)).numpy()
+        return idx if isinstance(x, int) else np.asarray(x)[idx]
+
+
+def a6_chain(canon, cfg, fam, seed, model=None, report=None):
+    """A3 with the shared subspace replaced by the H15 rotation chain S_l = R^l S_0."""
+    return build(canon, cfg, fam, seed, model=model, ordered=True, align=True, identity=True, chain=True, report=report)
+
+
+def a7_golden(canon, cfg, fam, seed, model=None, report=None):
+    """A1 with every random draw replaced by the golden-ratio sequence (H16)."""
+    return build(canon, cfg, fam, seed, model=model, fill="golden", report=report)
+
+
 def a2_ordered(canon, cfg, fam, seed, model=None, report=None):
     return build(canon, cfg, fam, seed, model=model, ordered=True, report=report)
 
@@ -438,4 +579,4 @@ def a3_aligned(canon, cfg, fam, seed, model=None, report=None):
 
 
 CONDITIONS = {"A0": a0_fresh, "A1": a1_spectrum, "A2": a2_ordered, "A2F": a2f_ordered_freq, "A3": a3_aligned,
-              "A4": a4_circuit}
+              "A4": a4_circuit, "A6": a6_chain, "A7": a7_golden}

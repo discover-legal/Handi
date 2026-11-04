@@ -85,3 +85,14 @@ of the two label strings; at most 500 items per task (fixed seed subsample where
 - A4 is built for the RoPE models only (Pythia-70M, Pythia-160M, Qwen3.5-0.8B). GPT-2 and TinyStories get no
   A4 row; the learned-position previous-token design stays an open gap.
 
+
+## H15 / H16 and conditions A6 / A7 (decided 2026-11-04)
+
+| date | decision |
+|---|---|
+| 2026-11-04 | Owner added H15 (cross-layer rotation rule) and H16 (golden-ratio / Fibonacci structured fill) after seeing H1-H14 and Rung 2 A0-A3. Text in hypotheses.md section 7. Measured by analysis/h15_rotation.py (H15) and Rung 2 conditions A6 (H15 applied) and A7 (H16), handi/authoring/generators.py. Post-freeze: reported as exploratory with their own nulls, not counted in the H13 verdict. |
+
+Builder defaults for A6 / A7 (chosen before any run; may be overridden):
+- **A6 chain.** One rotation R shared by readers and writers: R = exp(phi * A) with A the skew-symmetric generator of d/2 Haar-chosen 2-planes (so R rotates every plane by phi). Layer l's subspace S_l = R^l S_0 (readers of layer l read inside S_l, writers of layer l write inside S_l). (m, phi) by nested bisection on the closed-form expectation ov_j = (k / m^2) ||S_0^T R^j S_0||_F^2 (Haar k=32 bases inside S_l and S_{l+j}) so that ov_1 and the all-pair mean match the trained reader values from h15.csv; phi is clipped to [0, pi/2] and m to [32, d], and the achieved values are written to the build report. phi = 0 reduces A6 to A3.
+- **A7 sequence.** u_n = frac((n + 2^24 * seed) * phi) consumed in row-major order across all draws in the order the builder makes them (deterministic), clipped to [1e-10, 1 - 1e-10], z = ndtri(u). Permutations of 1-D vectors = argsort of the next n values. Products of the sequence with the covariance square root and the QR sign fix are exactly as in A1.
+- Both run on all eight models with 5 seeds, after A4.
