@@ -40,7 +40,10 @@ KS_SUBSAMPLE = 100_000    # cosines used in the two-sample KS (10^6 x 10^6 would
 def pair_cosines(W: np.ndarray, idx_i: np.ndarray, idx_j: np.ndarray, dev) -> np.ndarray:
     T = torch.from_numpy(np.ascontiguousarray(W, dtype=np.float32)).to(dev)
     T = T / T.norm(dim=1, keepdim=True).clamp_min(1e-12)
-    return (T[idx_i] * T[idx_j]).sum(dim=1).cpu().numpy().astype(np.float64)
+    # chunked: materialising all N_PAIRS gathered rows at once needs ~3 GB per operand at d=768
+    out = [(T[idx_i[s:s + 100_000]] * T[idx_j[s:s + 100_000]]).sum(dim=1).cpu()
+           for s in range(0, len(idx_i), 100_000)]
+    return torch.cat(out).numpy().astype(np.float64)
 
 
 def inout_cosines(W_in: np.ndarray, W_out: np.ndarray) -> np.ndarray:
