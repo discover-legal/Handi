@@ -96,3 +96,14 @@ Builder defaults for A6 / A7 (chosen before any run; may be overridden):
 - **A6 chain.** One rotation R shared by readers and writers: R = exp(phi * A) with A the skew-symmetric generator of d/2 Haar-chosen 2-planes (so R rotates every plane by phi). Layer l's subspace S_l = R^l S_0 (readers of layer l read inside S_l, writers of layer l write inside S_l). (m, phi) by nested bisection on the closed-form expectation ov_j = (k / m^2) ||S_0^T R^j S_0||_F^2 (Haar k=32 bases inside S_l and S_{l+j}) so that ov_1 and the all-pair mean match the trained reader values from h15.csv; phi is clipped to [0, pi/2] and m to [32, d], and the achieved values are written to the build report. phi = 0 reduces A6 to A3.
 - **A7 sequence.** u_n = frac((n + 2^24 * seed) * phi) consumed in row-major order across all draws in the order the builder makes them (deterministic), clipped to [1e-10, 1 - 1e-10], z = ndtri(u). Permutations of 1-D vectors = argsort of the next n values. Products of the sequence with the covariance square root and the QR sign fix are exactly as in A1.
 - Both run on all eight models with 5 seeds, after A4.
+
+## H16 / A7 validity note (builder diagnostic, 2026-11-04, why the golden-ratio fill scores better)
+
+Pythia-70M seed 0, 20k WikiText tokens. A7's lower cross-entropy comes from the embeddings, not the weight
+matrices: golden embeddings with Gaussian matrices score 27.7 nats (A7 27.4); golden matrices with Gaussian
+embeddings 41.8 (A1 44.8). The golden-sequence N6 embedding has effective rank 22 of 512 (trained 440, Gaussian
+N6 437): consecutive rows of frac(n phi) consumed row-major are shifts of one another, so token vectors collapse
+into a ~22-dimensional set and the output distribution flattens (entropy 6.3 nats vs 0.9 for A1). At the best
+output temperature every authored fill scores 10.85 nats = the uniform line (A0 10.83): none knows anything
+about the next word; A7 is merely less confidently wrong. H16 passes its mechanical rule but the mechanism is
+rank collapse of the fill, not structure that helps. Reported as such in results/summary.md.

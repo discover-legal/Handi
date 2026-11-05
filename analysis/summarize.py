@@ -242,7 +242,9 @@ def h13_verdict(rows: list[dict]) -> list[str]:
                 + (f"passes in {sorted(ms)}" if ms else "passes nowhere") + f" -> {hyp} {'CONFIRMED' if ok else 'NOT confirmed'}"
                 + f"; vs A1: {sorted(weak_hits.get(cond) or set()) or 'none'}; vs A0: {sorted(vs_a0_hits.get(cond) or set()) or 'none'}")
     out.append(post_line("A6", "H15 applied", "A3", vs_a3_hits))
-    out.append(post_line("A7", "H16", "A1", weak_hits))
+    out.append(post_line("A7", "H16", "A1", weak_hits) + ". Validity note (decisions.md, H16 / A7): the gain is from the "
+               "golden embeddings alone, whose effective rank collapses to ~22 of 512 and flattens the output distribution; at the "
+               "best output temperature every fill, A7 included, sits on the uniform line. Mechanically confirmed, but not structure that helps.")
     verdict = "NULL" if not weak and not strong else "POSITIVE"
     out.append(f"- **H13 verdict: {verdict}**" + (" (the pre-registered null clause is violated in the wrong direction: A1 is worse than A0; "
                "no authored condition beats either baseline)" if verdict == "NULL" else ""))
