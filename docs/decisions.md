@@ -115,3 +115,20 @@ rank collapse of the fill, not structure that helps. Reported as such in results
 | 2026-11-05 | Decided: the three untested structures (weights against data; nonlinear within-matrix structure; hidden / intrinsic dimension) to be built. Added as H17, H18, H19 in hypotheses.md section 7, measured by analysis/h17_direct_path.py, h18_within_matrix.py, h19_intrinsic_dim.py; H17 applied as Rung 2 condition A8 (handi/authoring/generators.py, handi/authoring/bigram.py). A8 is data-derived (corpus bigram counts), so it leaves Rung 2's weights-only premise; reported on its own line. |
 
 Builder defaults for A8 (chosen before any run; may be overridden): lambda = 0.7 and add-0.5 unigram as in the M1 bigram reference; rank = d; randomized range finder with 10 power iterations and 16 oversampling columns; temperature grid 0.05..500 (33 log-spaced values) fitted on train tokens 100k-200k; final-norm gain clamped to |g| >= 0.05 before division; write attenuation 0.01 as A4 (owner's factor), applied to attn.o, mlp.down, linear.out and their biases.
+
+### A8 run note (2026-11-05, after the eight-model run)
+
+- Untied models (Pythia-70M, Pythia-160M): the rank-d factorisation fits the smoothed log-bigram target
+  (block explained variance 0.999); direct-path CE 7.17–7.47 on WikiText, below the unigram line (7.50)
+  and far below A0 (11.0); still above the bigram line (6.10). Full-model CE equals the direct-path CE:
+  the attenuated layers above add nothing. Copy accuracy 0; LegalBench at majority class.
+- Tied models (GPT-2, TinyStories 1M–33M): the tied branch fails. E E^T is positive semidefinite, but the
+  symmetrised log-bigram target is indefinite (its dominant eigenvalue is negative, from the rank-1 log p
+  term); keeping only the positive eigenpairs gives block explained variance −55 and direct-path CE 10.25,
+  i.e. the uniform line. The tied A8 numbers (9.9–10.6 nats) therefore show no bigram knowledge; they pass
+  the positive-weak test against A3 and A0 only because the spectrum-matched fills are far worse than fresh
+  and the tied A8 embedding is near-uniform. Gap: a tied factorisation that can carry a sign (for example
+  via a signed final-norm gain) was not designed; it was not decided.
+- Qwen3.5-0.8B: the A8 build ran out of GPU memory in the fit-quality diagnostic block of
+  bigram.factorise (a dense V x 2048 one-hot matrix at V = 151936), before any cell was scored. Qwen is
+  tied, so the same gap applies. No Qwen A8 rows.
