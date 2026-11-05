@@ -162,12 +162,12 @@ def h13_verdict(rows: list[dict]) -> list[str]:
         if r["metric"].startswith("m4_") and fnum(r["ks"]) is not None:
             maj[(r["model"], r["metric"])] = fnum(r["ks"])
     tiers = lambda models: {MODELS[m]["tier"] for m in models}
-    authored = ("A2", "A2F", "A3", "A4", "A6", "A7")
-    post = {"A4", "A6", "A7"}      # post-freeze lines: reported on their own, not counted in the H13 verdict
+    authored = ("A2", "A2F", "A3", "A4", "A6", "A7", "A8")
+    post = {"A4", "A6", "A7", "A8"}      # post-freeze lines: reported on their own, not counted in the H13 verdict
     null_ok, weak_hits, strong_hits, law_hits, vs_a0_hits = [], defaultdict(set), defaultdict(set), [], defaultdict(set)
     vs_a3_hits = defaultdict(set)
-    out.append("| model | A0 CE | A1 CE | A2 CE | A2F CE | A3 CE | A4 CE | A6 CE | A7 CE | unigram | A5 |")
-    out.append("|---|---|---|---|---|---|---|---|---|---|---|")
+    out.append("| model | A0 CE | A1 CE | A2 CE | A2F CE | A3 CE | A4 CE | A6 CE | A7 CE | A8 CE | unigram | bigram | A5 |")
+    out.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for model, conds in by.items():
         def ce(cond):
             vs = conds.get(cond, {}).get("m1_ce_wikitext", [])
@@ -176,11 +176,12 @@ def h13_verdict(rows: list[dict]) -> list[str]:
         uni = conds.get("A5", {}).get("m1_ref_unigram_wikitext", [None])[0]
         cells = []
         a3 = ce("A3")
-        for cond in ("A0", "A1", "A2", "A2F", "A3", "A4", "A6", "A7"):
+        bi = conds.get("A5", {}).get("m1_ref_bigram_wikitext", [None])[0]
+        for cond in ("A0", "A1", "A2", "A2F", "A3", "A4", "A6", "A7", "A8"):
             c = ce(cond)
             cells.append("-" if c is None else f"{c[0]:.2f} [{c[1]:.2f}, {c[2]:.2f}]")
         a5 = ce("A5")
-        out.append(f"| {model} | " + " | ".join(cells) + f" | {'-' if uni is None else f'{uni:.2f}'} | {'-' if a5 is None else f'{a5[0]:.2f}'} |")
+        out.append(f"| {model} | " + " | ".join(cells) + f" | {'-' if uni is None else f'{uni:.2f}'} | {'-' if bi is None else f'{bi:.2f}'} | {'-' if a5 is None else f'{a5[0]:.2f}'} |")
         if a0 and a1:
             within = all(abs(ce(c)[0] - a0[0]) <= 0.1 for c in ("A1", "A2", "A3") if ce(c))
             null_ok.append((model, within))
@@ -245,6 +246,10 @@ def h13_verdict(rows: list[dict]) -> list[str]:
     out.append(post_line("A7", "H16", "A1", weak_hits) + ". Validity note (decisions.md, H16 / A7): the gain is from the "
                "golden embeddings alone, whose effective rank collapses to ~22 of 512 and flattens the output distribution; at the "
                "best output temperature every fill, A7 included, sits on the uniform line. Mechanically confirmed, but not structure that helps.")
+    a8_uni = sorted(strong_hits.get("A8") or set())
+    out.append(post_line("A8", "H17 applied, data-derived", "A3", vs_a3_hits)
+               + f". Reaches the unigram line in: {a8_uni or 'none'} (the first condition to do so; its numbers come from corpus bigram counts, "
+               "so it is outside Rung 2's weights-only premise and outside H13).")
     verdict = "NULL" if not weak and not strong else "POSITIVE"
     out.append(f"- **H13 verdict: {verdict}**" + (" (the pre-registered null clause is violated in the wrong direction: A1 is worse than A0; "
                "no authored condition beats either baseline)" if verdict == "NULL" else ""))

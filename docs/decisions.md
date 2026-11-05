@@ -107,3 +107,11 @@ into a ~22-dimensional set and the output distribution flattens (entropy 6.3 nat
 output temperature every authored fill scores 10.85 nats = the uniform line (A0 10.83): none knows anything
 about the next word; A7 is merely less confidently wrong. H16 passes its mechanical rule but the mechanism is
 rank collapse of the fill, not structure that helps. Reported as such in results/summary.md.
+
+## H17 / H18 / H19 and condition A8 (decided 2026-11-05)
+
+| date | decision |
+|---|---|
+| 2026-11-05 | Decided: the three untested structures (weights against data; nonlinear within-matrix structure; hidden / intrinsic dimension) to be built. Added as H17, H18, H19 in hypotheses.md section 7, measured by analysis/h17_direct_path.py, h18_within_matrix.py, h19_intrinsic_dim.py; H17 applied as Rung 2 condition A8 (handi/authoring/generators.py, handi/authoring/bigram.py). A8 is data-derived (corpus bigram counts), so it leaves Rung 2's weights-only premise; reported on its own line. |
+
+Builder defaults for A8 (chosen before any run; may be overridden): lambda = 0.7 and add-0.5 unigram as in the M1 bigram reference; rank = d; randomized range finder with 10 power iterations and 16 oversampling columns; temperature grid 0.05..500 (33 log-spaced values) fitted on train tokens 100k-200k; final-norm gain clamped to |g| >= 0.05 before division; write attenuation 0.01 as A4 (owner's factor), applied to attn.o, mlp.down, linear.out and their biases.

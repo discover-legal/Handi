@@ -566,6 +566,53 @@ def a7_golden(canon, cfg, fam, seed, model=None, report=None):
     return build(canon, cfg, fam, seed, model=model, fill="golden", report=report)
 
 
+def a8_direct_path(canon, cfg, fam, seed, model=None, report=None):
+    """A3 + the direct path (embedding, final norm, unembedding) set from corpus bigram statistics (H17 applied);
+    every residual write scaled by the A4 factor (docs/decisions.md, A8 defaults)."""
+    from . import bigram
+    from .circuits import ATTENUATION
+    w = build(canon, cfg, fam, seed, model=model, ordered=True, align=True, identity=True, report=report)
+    V, d = canon["embed.tok"].shape
+    tied = "unembed.w" not in canon
+    c = bigram.counts(model, V)
+    E, U, fit = bigram.factorise(c, V, d, tied, seed=0)
+    E = E - E.mean(axis=1, keepdims=True)                       # LayerNorm / RMSNorm see the row shape only
+    if fam == "qwen3_5":
+        gain = 1.0 + np.asarray(canon["ln_f.w"], dtype=np.float32)
+    else:
+        gain = np.asarray(canon["ln_f.w"], dtype=np.float32)
+    gain = np.where(np.abs(gain) < 0.05, 0.05 * np.sign(gain + 1e-12), gain)
+    U_inst = (U / gain[None, :]).astype(np.float32)
+    if not tied and "ln_f.b" in canon:
+        # unigram prior through the final-norm bias: b . u_t ~ log p_t (least squares)
+        uni = c["uni"].astype(np.float64) + bigram.ALPHA
+        logp = np.log(uni / uni.sum())
+        bvec, *_ = np.linalg.lstsq(U_inst.astype(np.float64), logp - logp.mean(), rcond=None)
+        w["ln_f.b"] = bvec.astype(np.float32)
+    elif "ln_f.b" in canon:
+        w["ln_f.b"] = np.zeros_like(canon["ln_f.b"])
+    w["embed.tok"] = E.astype(np.float32)
+    if not tied:
+        w["unembed.w"] = U_inst
+    else:
+        w["embed.tok"] = (E / np.sqrt(np.abs(gain))[None, :]).astype(np.float32)   # symmetric factor through the gain
+    # one global temperature on the calibration slice: scale the unembedding (or, tied, the final-norm gain)
+    T, ce_direct = bigram.direct_path_ce(w, fam, c["calib"], c["test"])
+    if not tied:
+        w["unembed.w"] = (w["unembed.w"] / T).astype(np.float32)
+    else:
+        w["ln_f.w"] = ((gain / T) - (1.0 if fam == "qwen3_5" else 0.0)).astype(np.float32)
+    _, ce_check = bigram.direct_path_ce(w, fam, c["calib"], c["test"], temps=[1.0])
+    for k in list(w):
+        if k.endswith((".mlp.down.w", ".mlp.down.b", ".linear.out.w", ".attn.o.b", ".attn.o.w")):
+            w[k] = (w[k] * ATTENUATION).astype(np.float32)
+    if report is not None:
+        refs = bigram.references(c, V)
+        report.update(a8_fit_ev=fit, a8_temperature=T, a8_direct_ce=ce_direct, a8_direct_ce_installed=ce_check,
+                      a8_ref_unigram=refs["unigram"], a8_ref_bigram=refs["bigram"], a8_tied=tied, a8_attenuation=ATTENUATION)
+    return w
+
+
 def a2_ordered(canon, cfg, fam, seed, model=None, report=None):
     return build(canon, cfg, fam, seed, model=model, ordered=True, report=report)
 
@@ -579,4 +626,4 @@ def a3_aligned(canon, cfg, fam, seed, model=None, report=None):
 
 
 CONDITIONS = {"A0": a0_fresh, "A1": a1_spectrum, "A2": a2_ordered, "A2F": a2f_ordered_freq, "A3": a3_aligned,
-              "A4": a4_circuit, "A6": a6_chain, "A7": a7_golden}
+              "A4": a4_circuit, "A6": a6_chain, "A7": a7_golden, "A8": a8_direct_path}
