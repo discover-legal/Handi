@@ -139,8 +139,9 @@ class _LogBigramOperator:
 @torch.no_grad()
 def factorise(c: dict, V: int, d: int, tied: bool, seed: int = 0, power: int = 10, over: int = 16):
     """Rank-d factors of the smoothed log-bigram target. Untied: T ~ E U^T (randomized SVD).
-    Tied: (T + T^T)/2 ~ E E^T from its top-d positive eigenpairs (randomized, symmetric).
-    Returns (E [V, d], U [V, d]) float32 numpy, and the Frobenius-norm fit ratio on a sampled block."""
+    Tied: (T + T^T)/2 ~ E diag(sign) E^T from its d eigenpairs of largest |lambda| (randomized, symmetric);
+    the sign goes into the final-norm gain (decisions.md, A8 run note, decision of 2026-11-05).
+    Returns (E [V, d], U [V, d] = E * sign for tied, fit ratio on a sampled block, sign [d] in {-1, +1})."""
     op = _LogBigramOperator(c, V)
     gen = torch.Generator(device=DEVICE).manual_seed(seed)
     k = d + over
@@ -153,10 +154,11 @@ def factorise(c: dict, V: int, d: int, tied: bool, seed: int = 0, power: int = 1
         B = Q.T @ sym(Q)                                 # k x k
         B = 0.5 * (B + B.T)
         lam, W = torch.linalg.eigh(B)
-        order = torch.argsort(lam, descending=True)[:d]
-        lam, W = lam[order].clamp_min(0), W[:, order]
-        E = (Q @ W) * lam.sqrt()[None, :]
-        U = E
+        order = torch.argsort(lam.abs(), descending=True)[:d]
+        lam, W = lam[order], W[:, order]
+        sign = torch.where(lam >= 0, 1.0, -1.0)
+        E = (Q @ W) * lam.abs().sqrt()[None, :]
+        U = E * sign[None, :]
     else:
         Q, _ = torch.linalg.qr(op.mm(Q))
         for _ in range(power):
@@ -166,11 +168,17 @@ def factorise(c: dict, V: int, d: int, tied: bool, seed: int = 0, power: int = 1
         Ub, s, Vh = torch.linalg.svd(B, full_matrices=False)
         E = (Q @ Ub[:, :d]) * s[:d].sqrt()[None, :]
         U = Vh[:d].T * s[:d].sqrt()[None, :]
-    # fit quality on a random 2048 x 2048 block
+        sign = torch.ones(d, device=DEVICE)
+    # fit quality on a random 2048 x 2048 block (columns in chunks of 256: V x 256 dense at a time)
     ia = torch.randint(0, V, (2048,), generator=gen, device=DEVICE)
     ib = torch.randint(0, V, (2048,), generator=gen, device=DEVICE)
-    onehot = torch.zeros(V, 2048, device=DEVICE); onehot[ib, torch.arange(2048, device=DEVICE)] = 1
-    T_blk = op.mm(onehot)[ia]                            # [2048, 2048]
+    blocks = []
+    for s0 in range(0, 2048, 256):
+        onehot = torch.zeros(V, 256, device=DEVICE); onehot[ib[s0:s0 + 256], torch.arange(256, device=DEVICE)] = 1
+        blk = op.mm(onehot) if not tied else 0.5 * (op.mm(onehot) + op.tmm(onehot))
+        blocks.append(blk[ia]); del onehot, blk
+    T_blk = torch.cat(blocks, 1)                         # [2048, 2048]
     fit = T_blk - E[ia] @ U[ib].T
     ratio = float(1 - fit.pow(2).sum() / (T_blk - T_blk.mean()).pow(2).sum())
-    return E.cpu().numpy().astype(np.float32), U.cpu().numpy().astype(np.float32), ratio
+    return (E.cpu().numpy().astype(np.float32), U.cpu().numpy().astype(np.float32), ratio,
+            sign.cpu().numpy().astype(np.float32))

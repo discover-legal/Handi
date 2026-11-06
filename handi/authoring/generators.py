@@ -568,16 +568,18 @@ def a7_golden(canon, cfg, fam, seed, model=None, report=None):
 
 def a8_direct_path(canon, cfg, fam, seed, model=None, report=None):
     """A3 + the direct path (embedding, final norm, unembedding) set from corpus bigram statistics (H17 applied);
-    every residual write scaled by the A4 factor (docs/decisions.md, A8 defaults)."""
+    every residual write and the position embedding zeroed (decided 2026-11-05; docs/decisions.md, A8 run note)."""
     from . import bigram
-    from .circuits import ATTENUATION
     w = build(canon, cfg, fam, seed, model=model, ordered=True, align=True, identity=True, report=report)
     V, d = canon["embed.tok"].shape
     tied = "unembed.w" not in canon
     c = bigram.counts(model, V)
-    E, U, fit = bigram.factorise(c, V, d, tied, seed=0)
+    E, U, fit, sign = bigram.factorise(c, V, d, tied, seed=0)
     E = E - E.mean(axis=1, keepdims=True)                       # LayerNorm / RMSNorm see the row shape only
-    if fam == "qwen3_5":
+    if tied:
+        gain = sign                                             # signed gain carries diag(sign) of E diag(sign) E^T
+        w["ln_f.w"] = (gain - (1.0 if fam == "qwen3_5" else 0.0)).astype(np.float32)
+    elif fam == "qwen3_5":
         gain = 1.0 + np.asarray(canon["ln_f.w"], dtype=np.float32)
     else:
         gain = np.asarray(canon["ln_f.w"], dtype=np.float32)
@@ -595,7 +597,7 @@ def a8_direct_path(canon, cfg, fam, seed, model=None, report=None):
     if not tied:
         w["unembed.w"] = U_inst
     else:
-        w["embed.tok"] = (E / np.sqrt(np.abs(gain))[None, :]).astype(np.float32)   # symmetric factor through the gain
+        w["embed.tok"] = E.astype(np.float32)                   # |gain| = 1: the symmetric factor needs no rescaling
     # one global temperature on the calibration slice: scale the unembedding (or, tied, the final-norm gain)
     T, ce_direct = bigram.direct_path_ce(w, fam, c["calib"], c["test"])
     if not tied:
@@ -603,13 +605,15 @@ def a8_direct_path(canon, cfg, fam, seed, model=None, report=None):
     else:
         w["ln_f.w"] = ((gain / T) - (1.0 if fam == "qwen3_5" else 0.0)).astype(np.float32)
     _, ce_check = bigram.direct_path_ce(w, fam, c["calib"], c["test"], temps=[1.0])
+    # decision of 2026-11-05: residual writes and position embeddings are zero in A8 (not the A4 factor)
     for k in list(w):
-        if k.endswith((".mlp.down.w", ".mlp.down.b", ".linear.out.w", ".attn.o.b", ".attn.o.w")):
-            w[k] = (w[k] * ATTENUATION).astype(np.float32)
+        if k.endswith((".mlp.down.w", ".mlp.down.b", ".linear.out.w", ".attn.o.b", ".attn.o.w")) or k == "embed.pos":
+            w[k] = np.zeros_like(w[k])
     if report is not None:
         refs = bigram.references(c, V)
         report.update(a8_fit_ev=fit, a8_temperature=T, a8_direct_ce=ce_direct, a8_direct_ce_installed=ce_check,
-                      a8_ref_unigram=refs["unigram"], a8_ref_bigram=refs["bigram"], a8_tied=tied, a8_attenuation=ATTENUATION)
+                      a8_ref_unigram=refs["unigram"], a8_ref_bigram=refs["bigram"], a8_tied=tied, a8_attenuation=0.0,
+                      a8_n_negative=int((sign < 0).sum()))
     return w
 
 

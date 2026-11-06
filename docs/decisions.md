@@ -132,3 +132,8 @@ Builder defaults for A8 (chosen before any run; may be overridden): lambda = 0.7
 - Qwen3.5-0.8B: the A8 build ran out of GPU memory in the fit-quality diagnostic block of
   bigram.factorise (a dense V x 2048 one-hot matrix at V = 151936), before any cell was scored. Qwen is
   tied, so the same gap applies. No Qwen A8 rows.
+
+| date | decision |
+|---|---|
+| 2026-11-05 | Decision: the signed final-norm gain for the tied A8 branch: (T+T^T)/2 ~ E diag(sign) E^T from the d eigenpairs of largest absolute value; sign installed in ln_f.w (Qwen: 1 + w). GPT-2 seed 0: fit 0.999, direct-path CE 7.61, 381 of 768 gains negative. |
+| 2026-11-05 | Decision: A8 zeroes the residual writes and the position embeddings. A8 now zeroes every residual write (attn.o, mlp.down, linear.out, with biases) and embed.pos instead of scaling by the A4 factor 0.01. Reason: on GPT-2 the x0.01 writes cost 0.6 nat and the A3 position fill 0.3 nat over the direct path (8.44 vs 7.61); with both zero the full model equals its direct path (7.60). All A8 rows re-run under this definition. |
