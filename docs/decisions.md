@@ -137,3 +137,12 @@ Builder defaults for A8 (chosen before any run; may be overridden): lambda = 0.7
 |---|---|
 | 2026-11-05 | Decision: the signed final-norm gain for the tied A8 branch: (T+T^T)/2 ~ E diag(sign) E^T from the d eigenpairs of largest absolute value; sign installed in ln_f.w (Qwen: 1 + w). GPT-2 seed 0: fit 0.999, direct-path CE 7.61, 381 of 768 gains negative. |
 | 2026-11-05 | Decision: A8 zeroes the residual writes and the position embeddings. A8 now zeroes every residual write (attn.o, mlp.down, linear.out, with biases) and embed.pos instead of scaling by the A4 factor 0.01. Reason: on GPT-2 the x0.01 writes cost 0.6 nat and the A3 position fill 0.3 nat over the direct path (8.44 vs 7.61); with both zero the full model equals its direct path (7.60). All A8 rows re-run under this definition. |
+
+### A8 rerun note (2026-11-06, signed tied gain, writes and position embeddings zeroed)
+
+All eight models, 5 seeds. Factorisation fit 0.999 everywhere (tied models: 381 of 768 gains negative on
+GPT-2 and TinyStories-33M, 510 of 1024 on Qwen). Full-model WikiText CE now equals the direct-path CE in
+every model. Means over seeds, WikiText: Pythia-160M 7.27, Pythia-70M 7.39 (below the unigram line 7.50);
+GPT-2 7.61, TinyStories-33M 7.60, 8M 7.66, 3M 7.76, 1M 7.92 (unigram 7.50); Qwen 7.66 (unigram 7.30).
+Bigram line 5.9–6.2 in all. Copy accuracy 0; LegalBench at majority class. The tied gap to the unigram
+line is the loss of the symmetrisation (T + T^T)/2: a tied model's logits must be symmetric in (a, b).
