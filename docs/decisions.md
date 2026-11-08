@@ -238,3 +238,15 @@ needs a per-context fit to a softmax target, which has no closed form; gap, open
 convex solves are admissible. With this corpus (1.8M train tokens) the trigram line itself is only 0.08 nat
 below the bigram line, so even a perfect chord layer would gain little here; a larger corpus would raise the
 ceiling for both the bigram direct path and the chords.
+
+## Post-freeze amendment: iterative optimisation admitted for the chord output (decided 2026-11-08)
+
+| date | decision |
+|---|---|
+| 2026-11-08 | Decision: iterative optimisation is admitted for the chord output, on condition of a proper train/validation/test split against overfitting Condition A10 (analysis/run_rung4_fit.py): the A9 build unchanged and frozen (direct path, codes, previous-token head, detectors, closed-form down columns as the starting point); only the chord neurons' down-projection columns (bigram-subspace rows) are free; Adam on the full model's next-token CE over the WikiText TRAIN split (the counted text); early stopping on the VALIDATION split (tokens 20k..70k, disjoint from the 20k slice that chose the A9 scale), patience 6 evaluations of 100 steps, at most 4000 steps; reported once on the standard M1 TEST slice. Rows in results/tables/rung4.csv, component A10. This is the project's first gradient step; it is confined to the chord outputs and reported on its own line, never merged with the closed-form results. |
+
+## Hearsay steering sweep (decided 2026-11-08)
+
+| date | decision |
+|---|---|
+| 2026-11-08 | Script analysis/hearsay_steer.py, rows results/tables/hearsay_steer.csv (hypothesis R3S). Directions: H = hearsay mean difference, two-fold (an item is steered by the direction fit on the other fold, scaled by that fold's projection sd); O = the overruling direction (reads hearsay at 0.62 in the first run), fit on all overruling items; HO = the two added. Sweep: all 24 layers x {last position, every position} x gamma in {-4, -2, +2, +4} on the 94 hearsay items; side effects on the nine other tasks at the best H and best HO setting. |
