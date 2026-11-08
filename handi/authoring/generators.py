@@ -631,3 +631,16 @@ def a3_aligned(canon, cfg, fam, seed, model=None, report=None):
 
 CONDITIONS = {"A0": a0_fresh, "A1": a1_spectrum, "A2": a2_ordered, "A2F": a2f_ordered_freq, "A3": a3_aligned,
               "A4": a4_circuit, "A6": a6_chain, "A7": a7_golden, "A8": a8_direct_path}
+
+
+def _a9(canon, cfg, fam, seed, model=None, report=None):
+    from .chords import a9_chords
+    return a9_chords(canon, cfg, fam, seed, model=model, report=report)
+
+
+def _a9c(canon, cfg, fam, seed, model=None, report=None):
+    from .chords import a9c_control
+    return a9c_control(canon, cfg, fam, seed, model=model, report=report)
+
+
+CONDITIONS.update({"A9": _a9, "A9C": _a9c})

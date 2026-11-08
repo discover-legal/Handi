@@ -176,3 +176,51 @@ layer). Where the label is linearly decodable, it is decodable from the middle l
 well as from the final state. The fold-0 E2 edit applied to the real lm_head and rescored by the M4 scorer on
 hearsay gives 0.638 vs 0.617 offline (constant term through mu_hat). Fix during the run: logits computed at the
 last position only (full-sequence logits ran out of GPU memory on contract_nli_limited_use).
+
+## Rung 4, "chords": trigram conjunction neurons on the A8 direct path (decided 2026-11-08)
+
+| date | decision |
+|---|---|
+| 2026-11-08 | Decided: the next chord beyond a bare note: conjunction neurons ("after these two tokens, this third") authored from corpus trigram statistics into the MLP layers, with the previous-token circuit. Module handi/authoring/chords.py; conditions A9 (neurons) and A9C (same layout, no neurons); rows in results/tables/rung4.csv. Data-derived, reported on its own line. Pythia only (untied, RoPE, parallel residual); GPT-2 would need the position embedding redesign A8 zeroed. |
+
+Builder defaults: residual layout B + K + K (K = head_dim = 64): bigram subspace at rank B = d - 2K, a fixed
+random +-1/sqrt(K) code per token in a "current" slot, a "previous" slot written by one RoPE previous-token head
+at layer 0 (the circuits.py recipe; gain from the grid {3, 10, 30, 100}, smallest with >= 0.95 mass on offset -1).
+Embedding rows scaled to a common norm (the final LN divides by it, so the direct path is unchanged, and every code
+slot has the same magnitude after every LN). Neurons in layers 1..L-1, one per context (a, b), the (L-1) x d_mlp
+most frequent with n(ab) >= 3: detector = code_b on the current slot + code_a on the previous slot, gain 8, bias
+-12 (true pair +4, half match -4, no match -12: exact GELU at -4 is 1e-4, at -12 zero; the first build with a true
+pair at +0.5 and idle neurons at -1.5 leaked -0.1 per idle neuron and summed to garbage). Down column: weighted
+least squares on the bigram subspace of r_ab = log p3(.|a,b) - log q(.|b), q = the model's own direct path after
+b, weights p3 (so the B dims go where the mass is), ridge 1e-2, times the LN scale, divided by gelu(+4), times a
+global scale chosen on the first 20k tokens of the WikiText VALIDATION split from {0.05, 0.1, 0.25, 0.5, 1}
+(the train calibration slice lies inside the counted text; with trigram counts an in-sample choice is a
+memorisation choice). p3 = 0.5 n(abc)/n(ab) + 0.5 p2(c|b). Reference lines reported: interpolated trigram on
+the test slice, and the same capped to the selected contexts (what the neurons could reach at best).
+
+Closed-form findings on the way (Pythia-70M, docs for the record): the detector is exact once rows have a common
+norm (true pair 15.97 +- 0.03 at gain 8, false-firing positions 0.1%). The correction is limited by LayerNorm
+geometry: the final LN fixes the output norm, so a correction vector of norm v shrinks the bigram signal by
+1/sqrt(1 + (v/r0)^2); with the plain pseudo-inverse v was 3x the row norm and the neurons made things worse at
+every scale. Replacing the token row by a context-fitted row (weighted LS, rescaled to the row norm) was also
+worse than the base row. Fitting a row to a softmax target properly is a convex problem with no closed form
+(iterative Newton / logistic regression), which the project's premise excludes; listed as a gap.
+
+## Hearsay direction (decided 2026-11-08)
+
+| date | decision |
+|---|---|
+| 2026-11-08 | Script analysis/hearsay_direction.py, rows results/tables/hearsay_direction.csv (hypothesis R3D). Direction = unit mean difference of the residual at the answer position between Yes and No hearsay items, per layer, two-fold; tests: readout accuracy, cosine and cross-readout against the nine other tasks' directions and against U[Yes]-U[No], steering at the best layer (last position only, gamma x sd in {-4..4}) on hearsay and on the other tasks, the converse, and a logit-lens / top-item reading. Direction saved to results/raw/hearsay_direction_L11.npy. |
+
+Result. The direction exists and is task-specific: it reads hearsay at 0.73 (best layer 11; above chance from
+layer 1), its cosine with the output Yes-No direction is -0.02 and with the other tasks' directions at most
+0.21, and no other task's direction reads hearsay above 0.62. Two caveats. (1) It is not causal where it was
+tested: adding up to +-4 sd of it at the last position of layer 11 leaves the answers unchanged (fraction Yes
+0.245 -> 0.255 at +2, +4; 0.234 at -2) and changes 0-4% of answers on the other tasks; the other tasks'
+directions are equally inert on hearsay. The answer is not computed from this direction at that place; steering
+at every position, or at other layers, was not run (one design, not decided). (2) It tracks form as much as
+law: the items projecting highest are long litigation narratives with a quoted statement or testimony
+("Corporation A sues B... introduces a statement by B's CEO"), the lowest are the short template items ("On the
+issue of whether X, the fact that Y"), which are mostly No. The logit lens of the direction is uninterpretable
+(mid-layer). So: a direction that separates the hearsay items, carried along by the model, not shown to be the
+direction the model answers with.
