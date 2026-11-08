@@ -250,3 +250,23 @@ ceiling for both the bigram direct path and the chords.
 | date | decision |
 |---|---|
 | 2026-11-08 | Script analysis/hearsay_steer.py, rows results/tables/hearsay_steer.csv (hypothesis R3S). Directions: H = hearsay mean difference, two-fold (an item is steered by the direction fit on the other fold, scaled by that fold's projection sd); O = the overruling direction (reads hearsay at 0.62 in the first run), fit on all overruling items; HO = the two added. Sweep: all 24 layers x {last position, every position} x gamma in {-4, -2, +2, +4} on the 94 hearsay items; side effects on the nine other tasks at the best H and best HO setting. |
+
+### Hearsay steering sweep result (2026-11-08)
+
+Unsteered: fraction Yes 0.245, accuracy 0.468; majority (all No) 0.564. Over all 24 layers x {last, all positions}
+x gamma in {-4,-2,+2,+4} x {H, O, HO} (576 settings) the best hearsay accuracy of any setting is 0.564 (H alone
+0.553, O alone 0.564, HO 0.564), i.e. nothing beats answering No to everything. What does move: the fraction of
+Yes answers. H is inert in layers 0-3, nudges the fraction from layer 4 on, and in layers 14-23 moves it between
+0.11 and 0.57, with the sign REVERSED relative to its readout (gamma -4, the "No" side, raises Yes). O behaves as a
+plain answer knob in the late layers: at layer 23, gamma -4 gives 0.00 Yes and +4 gives 0.98 Yes, at layer 20 0.00 /
+0.90, with accuracy 0.44-0.56 throughout; the overruling direction is the output Yes/No axis of the trained model,
+not legal content. HO is the vector sum and behaves like a weaker O (the two directions have cosine -0.19 at the
+late layers, so they partly cancel). Steering every position instead of only the last changes little (same bests
+within one item). Side effects of the best H setting (layer 4, all positions, +4): 2-30% of answers change on the
+other tasks (diversity_6 0.30, citation 0.15); of the best HO setting (layer 14, last, -4): 0-35% (diversity_1
+0.35, nys_judicial_ethics 0.20). Reading: adding a constant vector can only move the model's decision threshold,
+so the best it can reach is the accuracy of the model's own ranking of the items at the best threshold, which is
+not above majority here (E1 calibration in Rung 3: 0.49). The item-specific information the probe reads at 0.73-0.79
+is in the residual, but it is read out by a weight (E2 0.63, probe 0.79), not by a bias. So "the 0.62 and the 0.73
+steered together" make no difference to accuracy, and O alone makes a very large difference to the answer with no
+difference to its correctness.
