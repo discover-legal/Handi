@@ -146,3 +146,33 @@ every model. Means over seeds, WikiText: Pythia-160M 7.27, Pythia-70M 7.39 (belo
 GPT-2 7.61, TinyStories-33M 7.60, 8M 7.66, 3M 7.76, 1M 7.92 (unigram 7.50); Qwen 7.66 (unigram 7.30).
 Bigram line 5.9–6.2 in all. Copy accuracy 0; LegalBench at majority class. The tied gap to the unigram
 line is the loss of the symmetrisation (T + T^T)/2: a tied model's logits must be symmetric in (a, b).
+
+## Rung 3: closed-form edits to the trained Qwen3.5-0.8B for LegalBench (decided 2026-11-07)
+
+| date | decision |
+|---|---|
+| 2026-11-07 | Owner asked whether the trained Qwen3.5-0.8B can be hand-tweaked, no training, to do well on LegalBench, and whether the ability is still present. Rung 3 = closed-form weight edits of the unembedding rows of the two label tokens, fit on data, no gradient step. Script analysis/run_rung3.py, rows in results/tables/rung3.csv (hypothesis R3). Data-derived like A8: reported on its own line. |
+
+Builder defaults (may be overridden): the edit is applied to an untied copy of lm_head (same class, tie flag
+off) so the input embeddings of the label words in the few-shot prompt are untouched. Conditions E0 (as is),
+E1 (contextual calibration: equal mean label log-prob on the fit fold, written as row_t += delta_t mu_hat with
+mu_hat the unit mean final-norm state), E2 (E1 + ridge readout from the final-norm state at the answer position
+to the label, written into the label rows, constant term through mu_hat). Two folds by item parity on the M4
+test sample; every item is scored by the edit fit on the other fold. Ridge lambda = n_fit on standardised
+features; alpha = 2 x sd(label-logit gap) / sd(readout) on the fit fold. Diagnostic: per-layer ridge probe on
+the residual stream at the answer position (not an edit). First-label-token scoring (argmax over the two label
+logits equals the M4 argmax for single-token labels; multi-token labels flagged in the log). The fold-0 E2 edit
+is also applied to the real lm_head and rescored with the M4 scorer on one task; the two differ only through the
+constant term, carried by mu_hat whose projection varies slightly per item.
+
+### Rung 3 run note (2026-11-07)
+
+All ten tasks, two-fold. Mean accuracy over tasks: majority 0.546; E0 (as is) 0.568; E1 (calibration) 0.673;
+E2 (calibration + readout written into the label rows) 0.775; best per-layer probe 0.842. E2 is at or above
+0.83 on overruling (0.94), definition_classification (0.97), proa (0.85), diversity_1 (0.91), cuad_governing_law
+(1.00), contract_nli_limited_use (0.83); 0.74 on diversity_6; 0.63 on hearsay; at or below majority on
+nys_judicial_ethics (0.56) and citation_prediction_classification (0.32, n = 108, label not decodable at any
+layer). Where the label is linearly decodable, it is decodable from the middle layers (9 to 19) at least as
+well as from the final state. The fold-0 E2 edit applied to the real lm_head and rescored by the M4 scorer on
+hearsay gives 0.638 vs 0.617 offline (constant term through mu_hat). Fix during the run: logits computed at the
+last position only (full-sequence logits ran out of GPU memory on contract_nli_limited_use).
