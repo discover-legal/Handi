@@ -224,3 +224,17 @@ law: the items projecting highest are long litigation narratives with a quoted s
 issue of whether X, the fact that Y"), which are mostly No. The logit lens of the direction is uninterpretable
 (mid-layer). So: a direction that separates the hearsay items, carried along by the model, not shown to be the
 direction the model answers with.
+
+### Rung 4 run note (2026-11-08)
+
+Three seeds, scale chosen on the validation split. WikiText CE: Pythia-70M A9C 7.274 -> A9 7.235 (10,240 neurons,
+coverage 40% of positions, scale 0.1); Pythia-160M A9C 7.255 -> A9 7.258 (33,792 neurons, coverage 54%, scale
+0.05, the smallest in the grid: every larger scale is worse on validation). TinyStories CE and copy accuracy
+unchanged. Reference lines: bigram 6.10, trigram 6.02, trigram capped to the selected contexts 6.03 (70M) / 6.02
+(160M). Verdict: the chord circuit is exact (detection) but the knowledge it can write through a LayerNormed
+rank-B bottleneck in closed form is 0.04 nat on the small model and nothing on the larger one, where more
+neurons add more residual noise than correction. Writing a sharpened distribution into a fixed-norm residual
+needs a per-context fit to a softmax target, which has no closed form; gap, open whether iterative
+convex solves are admissible. With this corpus (1.8M train tokens) the trigram line itself is only 0.08 nat
+below the bigram line, so even a perfect chord layer would gain little here; a larger corpus would raise the
+ceiling for both the bigram direct path and the chords.
