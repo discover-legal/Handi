@@ -270,3 +270,16 @@ not above majority here (E1 calibration in Rung 3: 0.49). The item-specific info
 is in the residual, but it is read out by a weight (E2 0.63, probe 0.79), not by a bias. So "the 0.62 and the 0.73
 steered together" make no difference to accuracy, and O alone makes a very large difference to the answer with no
 difference to its correctness.
+
+### A10 run note (2026-11-09)
+
+WikiText test CE, three seeds: Pythia-70M A9C 7.274 -> A9 7.235 -> A10 6.717 +- 0.002 (all three seeds still
+improving at the 4,000-step cap; it was not raised: the last thousand steps gained 0.02 nat and the gap
+to the bigram line, 6.10, is 0.6); Pythia-160M A9C 7.255 -> A9 7.258 -> A10 6.663 +- 0.006 (stopped by the
+validation rule at steps 3,300 to 3,600; validation 6.60). Train loss 5.5 to 5.9 with validation still falling, so
+no memorisation of the batch. TinyStories CE improves too (70M 8.28 -> 8.17, 160M 8.17 -> 8.16) with no TinyStories
+text in the fit. Copy accuracy stays 0. Reading: the chord circuit's detection was never the limit; its closed-form
+output was. With the output fitted under a train/validation/test split, the chords recover half of the rank loss
+of the direct path, and the larger model's extra neurons, which hurt in closed form, help. The first 160M run
+hung after a laptop sleep (process alive, no output for 26 h, GPU idle); it was killed and the 160M seeds rerun
+from scratch; the 70M rows were already on disk and are untouched. Report page: docs/report.html.
