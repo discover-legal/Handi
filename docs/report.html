@@ -1,12 +1,12 @@
-<title>The Handi Report</title>
+<title>Hand-Written Model Weights</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: one reading column; every section opens in plain words, then a folding "technical" panel; charts sit in the column at full width. */
+/* Layout: one reading column of short question-led sections; each answer first, the evidence after; charts in the column; a folding "method and numbers" block for readers who want it. */
 :root {
   --bg: #f7f8f6; --surface: #ffffff; --fg: #15191c; --fg-2: #4b5560; --fg-3: #7b8591; --rule: #d9dee2; --rule-soft: #e8ecef;
-  --accent: #1f4e8c; --accent-soft: #e4ecf7; --plain-bg: #eef3ee; --plain-ink: #244d2f;
-  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s7: #6250d6;
+  --accent: #1f4e8c; --accent-soft: #e4ecf7; --answer-bg: #eef3ee; --answer-ink: #1f4228;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s7: #6250d6;
   --good: #1e7a3c; --warn: #b26a00; --bad: #b3261e;
   --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
   --body: "Source Serif 4", Georgia, "Times New Roman", serif;
@@ -14,48 +14,46 @@
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #15181b; --surface: #1d2125; --fg: #eceff1; --fg-2: #b9c1c8; --fg-3: #8a949d; --rule: #343b42; --rule-soft: #272d33;
-  --accent: #7fb0f0; --accent-soft: #1f2d40; --plain-bg: #1f2a22; --plain-ink: #b8dcc0;
-  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s7: #9085e9;
+  --accent: #7fb0f0; --accent-soft: #1f2d40; --answer-bg: #1f2a22; --answer-ink: #c4e2cb;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s7: #9085e9;
   --good: #5cc07a; --warn: #e3a34a; --bad: #ef7b73; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #15181b; --surface: #1d2125; --fg: #eceff1; --fg-2: #b9c1c8; --fg-3: #8a949d; --rule: #343b42; --rule-soft: #272d33;
-  --accent: #7fb0f0; --accent-soft: #1f2d40; --plain-bg: #1f2a22; --plain-ink: #b8dcc0;
-  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s7: #9085e9;
+  --accent: #7fb0f0; --accent-soft: #1f2d40; --answer-bg: #1f2a22; --answer-ink: #c4e2cb;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s7: #9085e9;
   --good: #5cc07a; --warn: #e3a34a; --bad: #ef7b73; color-scheme: dark }
 
 * { box-sizing: border-box }
-body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 17px; line-height: 1.55;
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 17px; line-height: 1.6;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 64px; }
-.wrap { max-width: 760px; margin: 0 auto }
-h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.1; margin: 0 }
-h1 { font-size: clamp(38px, 7vw, 60px); font-weight: 700; letter-spacing: -0.02em }
-h2 { font-size: clamp(26px, 4vw, 34px); font-weight: 700; margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--rule) }
-h3 { font-size: 20px; font-weight: 700; margin-top: 28px }
-p { margin: 14px 0; max-width: 68ch }
+.wrap { max-width: 740px; margin: 0 auto }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.12; margin: 0 }
+h1 { font-size: clamp(36px, 7vw, 56px); font-weight: 700; letter-spacing: -0.02em }
+h2 { font-size: clamp(24px, 4vw, 30px); font-weight: 700; margin-top: 60px; padding-top: 22px; border-top: 1px solid var(--rule) }
+h3 { font-size: 19px; font-weight: 700; margin-top: 26px }
+p { margin: 14px 0; max-width: 66ch }
+li { max-width: 66ch }
 .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3) }
-header { padding-block: 56px 8px }
-header .sub { font-size: 20px; color: var(--fg-2); max-width: 60ch; margin-top: 18px }
-header .meta { font-family: var(--mono); font-size: 13px; color: var(--fg-3); margin-top: 18px; display: flex; flex-wrap: wrap; gap: 6px 18px }
+header { padding-block: 52px 8px }
+header .sub { font-size: 20px; color: var(--fg-2); max-width: 58ch; margin-top: 16px }
+header .meta { font-family: var(--mono); font-size: 13px; color: var(--fg-3); margin-top: 16px }
 a { color: var(--accent) }
-
-.plain { background: var(--plain-bg); color: var(--plain-ink); border-radius: 6px; padding: 16px 18px; margin: 18px 0 }
-.plain .eyebrow { color: var(--plain-ink); opacity: .75 }
-.plain p { color: inherit; margin: 8px 0 0 }
+.answer { background: var(--answer-bg); color: var(--answer-ink); border-radius: 6px; padding: 14px 18px; margin: 16px 0; font-size: 18px }
+.answer b { font-family: var(--display) }
+.answer p { margin: 0; color: inherit }
+.term { border-bottom: 1px dotted var(--fg-3) }
+dfn { font-style: normal; font-weight: 600 }
 details.tech { border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; margin: 18px 0 }
-details.tech summary { cursor: pointer; font-family: var(--display); font-weight: 700; font-size: 16px; color: var(--accent); list-style: none }
+details.tech summary { cursor: pointer; font-family: var(--display); font-weight: 700; font-size: 15px; color: var(--accent); list-style: none }
 details.tech summary::before { content: "+ "; font-family: var(--mono) }
 details.tech[open] summary::before { content: "– " }
 details.tech summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px }
-details.tech p, details.tech li { font-size: 16px }
+details.tech p, details.tech li { font-size: 15.5px }
 details.tech ul { padding-left: 20px }
+ul.short { padding-left: 20px } ul.short li { margin: 8px 0 }
+ol.steps { padding-left: 22px } ol.steps li { margin: 10px 0 }
 
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 24px 0 }
-.tile { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; min-width: 0 }
-.tile .label { font-size: 13px; color: var(--fg-2); line-height: 1.3 }
-.tile .value { font-family: var(--display); font-size: 32px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em }
-.tile .note { font-size: 13px; color: var(--fg-3); margin-top: 4px }
-
-figure { margin: 26px 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 16px 10px; min-width: 0 }
+figure { margin: 24px 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 16px 10px; min-width: 0 }
 figure .title { font-family: var(--display); font-weight: 700; font-size: 17px }
 figure .subtitle { font-size: 14px; color: var(--fg-2); margin-top: 2px }
 figure .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--fg-2); margin: 10px 0 4px }
@@ -65,249 +63,241 @@ figure .legend i.line { height: 2px; width: 18px; border-radius: 1px }
 figure .legend i.ref { height: 0; width: 18px; border-top: 2px dashed var(--fg-3) }
 figure svg { width: 100%; height: auto; display: block; font-family: var(--mono); font-size: 11px }
 figure .chartwrap { overflow-x: auto }
-figure figcaption { font-size: 14px; color: var(--fg-2); margin-top: 10px; max-width: 70ch }
-figure .tablelink { font-size: 13px; margin-top: 8px }
+figure figcaption { font-size: 14.5px; color: var(--fg-2); margin-top: 10px; max-width: 70ch }
 figure details.data { margin-top: 8px; font-size: 13px }
 figure details.data summary { cursor: pointer; color: var(--accent) }
 .tip { position: fixed; pointer-events: none; background: var(--fg); color: var(--bg); font-family: var(--mono); font-size: 12px; padding: 6px 8px; border-radius: 4px; z-index: 20; max-width: 260px; display: none }
 
-table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums }
-.tablewrap { overflow-x: auto; margin: 18px 0 }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; font-variant-numeric: tabular-nums }
+.tablewrap { overflow-x: auto; margin: 16px 0 }
 th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule-soft); vertical-align: top }
 th { font-family: var(--display); font-weight: 700; font-size: 13px; color: var(--fg-2) }
 td.num, th.num { text-align: right }
-.chip { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 2px 7px; border-radius: 10px; white-space: nowrap }
-.chip.yes { background: color-mix(in srgb, var(--good) 15%, transparent); color: var(--good) }
-.chip.part { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn) }
-.chip.no { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad) }
-.chip.na { background: var(--rule-soft); color: var(--fg-2) }
-
-.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px }
-@media (max-width: 620px) { .cols { grid-template-columns: 1fr } }
-.cols > div { min-width: 0 }
-.key { font-family: var(--mono); font-size: 13px; background: var(--accent-soft); padding: 1px 5px; border-radius: 3px }
-ol.steps { padding-left: 22px } ol.steps li { margin: 8px 0 }
-footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--fg-2) }
-@media (prefers-reduced-motion: no-preference) { details.tech summary { transition: color .15s } }
+dl.gloss { max-width: 66ch } dl.gloss dt { font-family: var(--display); font-weight: 700; margin-top: 12px } dl.gloss dd { margin: 2px 0 0 0; font-size: 16px }
+footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--fg-2) }
 </style>
 
 <div class="wrap">
 <header>
-  <div class="eyebrow">Handi · hand-authored language-model weights · November 2026</div>
-  <h1>Can you build a language model by hand?</h1>
-  <p class="sub">The owner and the Claude measured what trained transformer weights contain, tried to write weights from those patterns without any training, and then asked how far that gets you towards law.</p>
-  <div class="meta"><span>Owner: hordruma</span><span>Builder: Claude Fable 5.1</span><span>Repo: <a href="https://github.com/hordruma/Handi">github.com/hordruma/Handi</a></span></div>
+  <div class="eyebrow">Handi project · November 2026</div>
+  <h1>Can you write a language model's weights by hand?</h1>
+  <p class="sub">What the Claude and I found when we tried to build a language model without training it, and what that taught us about where a trained model's knowledge lives, including its knowledge of law.</p>
+  <div class="meta">Written for the LegalQuants community. Every number on this page comes from a logged run in a git repository; the last section says how to check.</div>
 </header>
 
-<div class="plain">
-  <div class="eyebrow">In one breath</div>
-  <p>A trained model's weights are full of real, measurable structure. But that structure is the shape of the instrument, not the music. Building weights from the shape alone gives a model that is worse than random. The only authored models that work are the ones that bring in data: a word-pair table gives a model that is about as good as counting words, and a hand-built "chord" circuit, once its output is tuned by optimisation on training text with a proper held-out split, reaches half-way to a real two-word model. The trained Qwen model does know law tasks in its middle layers; a closed-form edit of its output rows raises its LegalBench score from 0.57 to 0.78. A direction for "hearsay" exists inside it, but pushing on it changes the answers without making them right.</p>
-</div>
+<h2>The short version</h2>
+<ul class="short">
+  <li><b>Trained models have real, measurable structure in their weights</b>, and we confirmed fourteen separate kinds of it. But that structure is about the sizes and shapes of the numbers, not about which word each number belongs to.</li>
+  <li><b>Weights written from that structure alone make a model that is worse than random.</b> Not slightly worse: much worse, in every model we tried.</li>
+  <li><b>Weights written from word statistics do work.</b> A table of which word follows which, written straight into the model with no training, predicts text about as well as word-pair counting does. A hand-built "after these two words, this third" circuit, with its output tuned on training text, does better still.</li>
+  <li><b>Nothing we wrote by hand comes close to a real trained model at predicting text.</b> The best hand-built model needs about 780 guesses per word; a trained model of the same size needs about 37.</li>
+  <li><b>On law tasks, a calculated edit to a trained model does beat the model as shipped.</b> Qwen3.5-0.8B scores 0.57 on ten LegalBench tasks as shipped and 0.78 after we rewrote two rows of its output table using a formula, no training. The knowledge was already inside the model; it was just not being read out. Two tasks could not be improved because the model does not know them anywhere.</li>
+  <li><b>There is a "hearsay" pattern inside Qwen, but it is a detector, not a switch.</b> Pushing on it changes the model's answers without making them more correct.</li>
+</ul>
 
-<div class="tiles">
-  <div class="tile"><div class="label">Structural hypotheses confirmed</div><div class="value">14 / 19</div><div class="note">at five or more standard deviations from random</div></div>
-  <div class="tile"><div class="label">Pattern-only authored models vs random init</div><div class="value">worse</div><div class="note">by 3 to 33 nats, every model</div></div>
-  <div class="tile"><div class="label">Bigram direct path, Pythia-160M</div><div class="value">7.27</div><div class="note">nats per token; unigram 7.50, bigram 6.10</div></div>
-  <div class="tile"><div class="label">Fitted chords, Pythia-70M</div><div class="value">6.72</div><div class="note">from 7.24 closed form; bigram line 6.10</div></div>
-  <div class="tile"><div class="label">LegalBench, Qwen3.5-0.8B</div><div class="value">0.57 → 0.78</div><div class="note">mean over ten tasks, closed-form output edit</div></div>
-  <div class="tile"><div class="label">Best steered hearsay accuracy</div><div class="value">0.56</div><div class="note">equals answering No to everything</div></div>
-</div>
+<h2>1. What we were trying to do</h2>
+<p>A language model is a large pile of numbers called <dfn>weights</dfn>. Qwen3.5-0.8B has about 800 million of them. Normally the weights are set by <dfn>training</dfn>: the model reads billions of words, and after every mistake every weight is nudged slightly in the direction that would have made the mistake smaller. Nobody chooses the numbers. They emerge.</p>
+<p>We asked three questions in order.</p>
+<ol class="steps">
+  <li>Trained weights are not random. Can you measure the regularities in them precisely enough to <em>write</em> a fresh set of weights from the regularities, and would that model do anything?</li>
+  <li>If not, what <em>can</em> be written by hand, and how far does it get you?</li>
+  <li>Take a real trained model that scores badly on law tasks. Is the legal knowledge missing, or present but badly expressed? If it is present, can a calculated edit, with no training, bring it out?</li>
+</ol>
+<p>Eight trained models were studied: GPT-2 small, two Pythia models (70 million and 160 million weights), Qwen3.5-0.8B, and four small TinyStories models. Every experiment was pre-registered: the hypotheses and pass rules were written down before the measurements were run, and everything added afterwards is marked as such.</p>
 
-<h2>1. The question, and the piano</h2>
-<p>A language model is a very large set of numbers, its weights. Training sets them by nudging each one millions of times. Nobody writes them by hand. This project asked whether you could.</p>
-<div class="plain">
-  <div class="eyebrow">Plain words</div>
-  <p>Think of the trained model as a piano. We can measure a lot about a finished piano: the lengths of the strings, how the frame is braced, which keys sit next to each other. The first question was whether those measurements, taken from real pianos, are regular enough to build a new piano from. The second question was whether a piano built that way plays anything. The third, once we had an instrument that made sounds, was what it takes to play a chord on purpose.</p>
-</div>
-<p>The ultimate target was law. The owner works in legal technology, and LegalBench, a public set of legal classification tasks, was the finish line throughout. Eight trained models were studied, from a one-million-parameter TinyStories model to Qwen3.5-0.8B, across three architectures.</p>
-<details class="tech"><summary>Technical framing</summary>
-  <p>Nineteen hypotheses (H1 to H19) about weight structure were measured identically on eight trained models and on families of null weight sets of the same shape. The pre-registered rule: a pattern counts as confirmed only if the trained value lies at least 5 standard deviations outside the null in at least two of three model tiers. Thirteen hypotheses were frozen before measurement; H14 to H19 were added after results were seen and are reported as amendments. The capstone, H13, asked whether weights authored from the confirmed patterns beat fresh random initialisation on held-out cross-entropy. Everything is in the repository: hypotheses in <span class="key">docs/hypotheses.md</span>, dated decisions and run notes in <span class="key">docs/decisions.md</span>, per-row results in <span class="key">results/tables/*.csv</span>.</p>
-  <p>Cross-entropy throughout is in nats per token, lower is better. Reference lines on WikiText-103: uniform over the vocabulary 10.8, unigram (word frequencies only) 7.50, interpolated bigram (word pairs) 6.10, interpolated trigram 6.02; a trained Pythia-160M scores 3.61.</p>
-</details>
-
-<h2>2. What is in the weights</h2>
-<p>Fourteen of nineteen structural claims held, most by enormous margins. The weights are nothing like random matrices.</p>
-<div class="plain">
-  <div class="eyebrow">Plain words</div>
-  <p>The piano is built to a pattern. A few strings carry most of the energy; the parts that read the past are shaped like "copy what was just there"; a handful of channels are much louder than the rest; the same channels are reused floor to floor; and the way words are laid out inside the model is a thin, curved sheet rather than a cloud filling the whole space. None of this was in doubt by the end. The question was whether any of it says which note each key plays.</p>
-</div>
+<h2>2. How a language model is scored</h2>
+<p>You need two scores to read this page.</p>
+<h3>Predicting the next word: nats</h3>
+<p>A language model's basic job is to guess the next word of a text. We score it on held-out text it has never seen: for each word, how much probability did the model give to the word that actually came next? The score is <dfn>cross-entropy</dfn>, measured in <dfn>nats</dfn>. Lower is better. The number itself is hard to feel, so here is the translation that makes it concrete: <b>raising e to the power of the score gives the number of equally likely guesses the model is effectively choosing between.</b></p>
 <div class="tablewrap"><table>
-<thead><tr><th>Hypothesis</th><th>Verdict</th><th>What it says</th></tr></thead>
+<thead><tr><th>Score (nats)</th><th class="num">Equivalent guesses per word</th><th>What a model at this level knows</th></tr></thead>
 <tbody>
-<tr><td>H1 heavy-tailed spectra</td><td><span class="chip yes">confirmed</span></td><td>singular values have power-law tails and spikes above the random edge</td></tr>
-<tr><td>H2 spikes carry function</td><td><span class="chip part">mixed</span></td><td>true for attention QK circuits, mixed for OV, not for embeddings</td></tr>
-<tr><td>H3 low-rank identity-like circuits</td><td><span class="chip yes">confirmed</span></td><td>attention circuits have low stable rank and lean on the identity</td></tr>
-<tr><td>H4 embedding anisotropy</td><td><span class="chip yes">confirmed</span></td><td>a dominant common direction across all tokens</td></tr>
-<tr><td>H5 outlier residual dimensions</td><td><span class="chip yes">confirmed</span></td><td>the same few channels are anomalous in every layer</td></tr>
-<tr><td>H6 heads identifiable from weights</td><td><span class="chip yes">confirmed</span></td><td>previous-token heads found from weights alone</td></tr>
-<tr><td>H7 cross-layer subspace alignment</td><td><span class="chip yes">confirmed</span></td><td>readers across layers share a subspace far above chance</td></tr>
-<tr><td>H8 spectral-shape universality</td><td><span class="chip na">inconclusive</span></td><td>GPT-2 and Pythia collapse together, Qwen does not</td></tr>
-<tr><td>H9 fractal structure</td><td><span class="chip no">no evidence</span></td><td>the statistic failed its own control and was discounted</td></tr>
-<tr><td>H10 positional structure</td><td><span class="chip yes">confirmed</span></td><td>learned positions are smooth and low-dimensional</td></tr>
-<tr><td>H11 number structure</td><td><span class="chip part">in part</span></td><td>a period-100 helix in digit embeddings; no elliptic-curve structure</td></tr>
-<tr><td>H12 MLP neuron geometry</td><td><span class="chip yes">confirmed</span></td><td>heavy tails of near-parallel neurons</td></tr>
-<tr><td>H14 spectral mixture</td><td><span class="chip yes">amendment</span></td><td>a few profiles explain held-out spectra, but do not identify matrix type</td></tr>
-<tr><td>H15 rotation rule</td><td><span class="chip no">refuted</span></td><td>repeating the inter-layer turn never beats staying put</td></tr>
-<tr><td>H17 direct path is a bigram model</td><td><span class="chip yes">amendment</span></td><td>beats a shuffle null in 7 of 8 models but sits within 0.1 nat of uniform</td></tr>
-<tr><td>H18 within-matrix structure</td><td><span class="chip yes">amendment</span></td><td>every unit type heavier-tailed than spectrum-matched random</td></tr>
-<tr><td>H19 intrinsic dimension</td><td><span class="chip yes">amendment</span></td><td>token embeddings lie on curved sheets of dimension 14 to 42 in 512 to 1024 dimensions</td></tr>
+<tr><td>10.8</td><td class="num">50,000</td><td>Nothing. Every word in the vocabulary is equally likely.</td></tr>
+<tr><td>7.5</td><td class="num">1,800</td><td>How common each word is on its own ("the" is likelier than "hereinafter").</td></tr>
+<tr><td>6.1</td><td class="num">450</td><td>Which word tends to follow which ("of the", "United States").</td></tr>
+<tr><td>6.0</td><td class="num">400</td><td>Which word tends to follow a given pair of words.</td></tr>
+<tr><td>3.6</td><td class="num">37</td><td>A trained Pythia-160M: grammar, topic, long-range context.</td></tr>
 </tbody></table></div>
-<details class="tech"><summary>Technical detail</summary>
-  <p>H13 (the capstone) and H16 (golden-ratio fill) are experimental conditions rather than measurements and appear in section 3. Two instruments failed their own controls and were discounted before any verdict: the H9 box-counting statistic and the H6 weight-only K-composition statistic. z-scores for the confirmed rows are mostly in the hundreds or thousands; the full per-model, per-layer rows are in <span class="key">results/tables/h01.csv</span> through <span class="key">h19.csv</span>.</p>
-</details>
+<p>The test text throughout is WikiText-103, a corpus of Wikipedia articles. The 7.5, 6.1 and 6.0 lines are from simple counting models fitted to the same training text, and they are the yardsticks: a hand-built model that reaches 6.1 is doing as well as counting word pairs. One nat of improvement means the number of guesses has been cut by a factor of 2.7.</p>
+<h3>Law tasks: accuracy against the majority answer</h3>
+<p>LegalBench is a public collection of legal classification tasks. We used ten with Yes/No style answers: hearsay (is this statement hearsay?), overruling (does this sentence overrule a prior case?), governing-law clauses in contracts, diversity jurisdiction, and so on. The score is <dfn>accuracy</dfn>: the fraction of items answered correctly. The number to beat is the <dfn>majority rate</dfn>: the score you would get by always giving the commoner answer. On hearsay the majority rate is 0.56, so a model scoring 0.47 is doing worse than someone who answers No to everything.</p>
 
-<h2>3. Building from the blueprint</h2>
-<p>Then the test. Weights were authored from the confirmed patterns, loaded into the real model classes, and scored on held-out text. The result is the project's central negative.</p>
-<div class="plain">
-  <div class="eyebrow">Plain words</div>
-  <p>A piano built from the measurements of real pianos, with the strings attached to random keys, plays loudly and wrongly. A random pile of parts at least plays quietly. That is the whole of the first chart: every "patterned" model is far worse than the plain random one, because the patterns say how loud each part should be but not which note it should play. The one thing that worked was skipping the blueprint and wiring each key to the note that most often follows it in a book. That gives a model about as good as word counting. It knows nothing about grammar, copying or law.</p>
-</div>
+<h2>3. Can you build a model from the structure in trained weights?</h2>
+<div class="answer"><p><b>No.</b> Every model built from the measured structure alone scores far worse than a model filled with random numbers. The structure is real; it just does not say which word goes where.</p></div>
+<p>First we confirmed the structure. Nineteen hypotheses about trained weights were tested against random weights of the same shape, with a strict rule: a pattern counts only if the trained value is at least five standard deviations away from random in at least two of three model sizes. Fourteen passed, most by enormous margins. For example: a few directions in each weight matrix carry most of the signal; the parts of the model that look back over earlier words are shaped like "copy what was just there"; the same handful of channels are unusually loud in every layer; and the positions of words inside the model lie on a thin curved sheet rather than filling the space.</p>
+<p>Then we wrote fresh weights that reproduce those patterns, loaded them into the real model code, and scored them. The chart shows what happened.</p>
 
 <figure id="fig-ladder">
-  <div class="title">The authoring ladder on WikiText</div>
-  <div class="subtitle">Cross-entropy in nats per token, lower is better. Mean of five seeds per cell, eight models.</div>
-  <div class="legend"><span><i style="background:var(--s1)"></i>A0 fresh random init</span><span><i style="background:var(--s2)"></i>A1 spectrum-matched (patterns)</span><span><i style="background:var(--s3)"></i>A8 bigram direct path</span><span><i style="background:var(--s4)"></i>A5 trained model</span><span><i class="ref"></i>unigram 7.50 · bigram 6.10</span></div>
+  <div class="title">Models built by hand, scored on Wikipedia text</div>
+  <div class="subtitle">Nats per word, lower is better. Each dot is the mean of five random seeds.</div>
+  <div class="legend"><span><i style="background:var(--s1)"></i>random numbers (no structure)</span><span><i style="background:var(--s2)"></i>built from the measured structure</span><span><i style="background:var(--s3)"></i>built from a word-pair table</span><span><i style="background:var(--s4)"></i>the real trained model</span><span><i class="ref"></i>counting yardsticks</span></div>
   <div class="chartwrap" data-chart="ladder"></div>
-  <figcaption>A2, A3 and A6, which add outlier channels, anisotropy, the shared subspace, identity-like circuits and the rotation rule, sit within noise of A1 and are left off the plot. A7, the golden-ratio fill, is 1 to 17 nats better than A1 but still scores the uniform line at its best temperature. The TinyStories models score 1.2 to 2.7 on their own corpus and are poor on WikiText because they were trained on children's stories.</figcaption>
+  <figcaption>Read left to right as better to worse. The orange dots (built from structure) are far to the right of the blue dots (random numbers) in every model: 3 to 33 nats worse. Random numbers score 10.8 to 12.6, meaning "no idea". The green dots, built from word statistics, are the first hand-built models that know anything. The yellow dots are what training achieves. The four TinyStories models were trained on children's stories, so their trained versions do poorly on Wikipedia; on their own stories they score 1.2 to 2.7.</figcaption>
   <details class="data"><summary>Data table</summary><div class="tablewrap" data-table="ladder"></div></details>
 </figure>
 
+<p><b>Why structure alone fails.</b> The measured patterns describe how large the numbers are and which directions they point in. A trained model has some very large numbers, and in the trained model those large numbers are attached to the right words. Reproduce the sizes without the attachments and you get a model that is loudly confident about the wrong words. A model of small random numbers is quietly unsure about everything, which scores better. Adding more of the measured structure (the loud channels, the shared directions, the copy-shaped circuits) changed nothing measurable, because none of it says which word a direction belongs to.</p>
+<details class="tech"><summary>Method and numbers</summary>
+  <ul>
+    <li>Conditions: A0 fresh random initialisation; A1 every matrix given the trained singular values on random directions; A2 adds outlier dimensions and embedding anisotropy; A3 adds the cross-layer shared subspace and identity-like attention circuits; A6 adds the inter-layer rotation rule; A7 a golden-ratio (Kronecker) fill instead of Gaussian. A2, A3 and A6 are within noise of A1 and are omitted from the chart. A7 is 1 to 17 nats better than A1 but at its best output temperature still equals the "no idea" line.</li>
+    <li>The pre-registered capstone test (H13) asked whether any of A1 to A3 beats A0 on held-out cross-entropy. Verdict: null, in the wrong direction by 3 to 33 nats, in all eight models.</li>
+    <li>An explicitly authored copying circuit (A4) copies correctly (copy accuracy 0.84 to 0.96) but does not improve next-word prediction, since copying earlier words is a small part of predicting text.</li>
+    <li>Across 490 hand-built-model LegalBench comparisons, six beat the majority rate at 95% confidence, against about 24 expected by chance; none reproduced at a second model size.</li>
+  </ul>
+</details>
+
+<h2>4. What can be written by hand, then?</h2>
+<div class="answer"><p><b>Two things worked: a word-pair table, and a two-word-context circuit.</b> Both are written from counts in a text corpus, not from the structure of trained weights. Each works exactly as far as the statistics it carries, and no further.</p></div>
+
+<h3>4a. The word-pair table</h3>
+<p>Count, over the training text, how often each word follows each other word. That table can be compressed into the two matrices a transformer uses to turn words into numbers and numbers back into words, by a standard matrix factorisation. No training step: it is a formula. Everything else in the model is switched off.</p>
+
 <figure id="fig-a8">
-  <div class="title">The bigram direct path, up close</div>
-  <div class="subtitle">A8 on each model against the unigram and bigram reference lines (WikiText, nats per token)</div>
-  <div class="legend"><span><i style="background:var(--s3)"></i>A8 untied embeddings</span><span><i style="background:var(--s7)"></i>A8 tied embeddings</span><span><i class="ref"></i>reference lines</span></div>
+  <div class="title">The word-pair table written into each model</div>
+  <div class="subtitle">Nats per word on Wikipedia text; lower is better. Dashed lines are the counting yardsticks.</div>
+  <div class="legend"><span><i style="background:var(--s3)"></i>model with separate input and output word tables</span><span><i style="background:var(--s7)"></i>model that shares one table for both</span><span><i class="ref"></i>yardsticks</span></div>
   <div class="chartwrap" data-chart="a8"></div>
-  <figcaption>Only the two untied Pythia models get below the unigram line. In a model whose input and output embeddings are the same matrix, the direct-path score for "b after a" must equal "a after b", so only the symmetric half of the word-pair table can be carried. Every model stays well above the bigram line because a rank-d factorisation keeps only part of the table.</figcaption>
+  <figcaption>Every model lands near the "knows word frequencies" line (7.5, about 1,800 guesses) and well short of the "knows word pairs" line (6.1, about 450 guesses), even though the table being written in <em>is</em> the word-pair table. Two reasons. The compression keeps only part of the table: a model 512 numbers wide cannot hold a 50,000 by 50,000 table. And six of the eight models use one shared table for reading words in and writing them out, which forces the score for "B after A" to equal the score for "A after B"; only the symmetric half of the pair statistics survives. The two Pythia models have separate tables and are the only ones to get under the frequency line.</figcaption>
 </figure>
 
-<details class="tech"><summary>Technical detail</summary>
-  <ul>
-    <li><b>Conditions.</b> A0 fresh init; A1 every matrix given the trained singular values on random directions; A2 adds outlier dimensions and anisotropy; A3 adds the shared subspace and identity-like attention circuits; A4 an explicit previous-token plus induction circuit (copy accuracy 0.84 to 0.96 where buildable, no CE gain); A6 the H15 rotation chain; A7 golden-ratio Kronecker fill; A8 the smoothed corpus bigram table factorised in closed form (randomised SVD when untied; signed symmetric eigendecomposition when tied, sign carried in the final-norm gain) into embedding and unembedding, all residual writes and position embeddings zeroed, temperature fitted on a train slice.</li>
-    <li><b>H13 verdict: NULL.</b> No pattern-authored condition beats fresh init. The failure is 3 to 33 nats in the wrong direction: large trained singular values on random directions produce confident wrong logits, while a fresh init is near-uniform and cannot be very wrong.</li>
-    <li><b>A8 numbers.</b> Pythia-160M 7.27, Pythia-70M 7.39, GPT-2 7.61, TinyStories-33M 7.60, 8M 7.66, 3M 7.76, 1M 7.92, Qwen3.5-0.8B 7.66 (Qwen's own unigram line is 7.30). Copy accuracy 0 and LegalBench at majority in every A8 cell.</li>
-    <li><b>LegalBench across the ladder.</b> 490 authored-condition comparisons; six cells beat majority at 95% confidence against about 24 expected by chance; none reproduces in a second tier.</li>
-  </ul>
-</details>
-
-<h2>4. Is the law still in there?</h2>
-<p>The authored models know no law. The trained Qwen3.5-0.8B scores poorly on LegalBench too, near the majority class. The owner asked whether the ability is in there and badly expressed, or simply absent. It is in there.</p>
-<div class="plain">
-  <div class="eyebrow">Plain words</div>
-  <p>Imagine a student who has read the law books but freezes at the exam and writes "No" to everything. We looked inside the model while it read each question and found that the right answer is usually visible in its middle layers, before it chooses what to say. A small, calculated correction to how the final answer is read off that state, with no training, lifts the average over ten tasks from 0.57 to 0.78, and six tasks go above 0.83. Two tasks are not decodable anywhere inside the model, so no edit can fix them.</p>
-</div>
-
-<figure id="fig-rung3">
-  <div class="title">LegalBench accuracy before and after closed-form output edits</div>
-  <div class="subtitle">Qwen3.5-0.8B, ten tasks, two-fold by item parity. Each item is scored by the edit fitted without it.</div>
-  <div class="legend"><span><i style="background:var(--s4)"></i>majority class</span><span><i style="background:var(--s1)"></i>E0 as trained</span><span><i style="background:var(--s2)"></i>E2 calibration + ridge readout</span><span><i style="background:var(--s3)"></i>best linear probe, any layer</span></div>
-  <div class="chartwrap" data-chart="rung3"></div>
-  <figcaption>E2 edits only the output rows of the two label tokens. The probe is a diagnostic, not an edit: it shows the ceiling of what is linearly readable at the best layer. Citation prediction and NY judicial ethics are not decodable at any layer.</figcaption>
-  <details class="data"><summary>Data table</summary><div class="tablewrap" data-table="rung3"></div></details>
-</figure>
-
-<details class="tech"><summary>Technical detail</summary>
-  <ul>
-    <li><b>E0</b> trained model, first-label-token scoring. <b>E1</b> contextual calibration: each label row gets a multiple of the mean final-norm state so that the labels' mean log-probabilities on the fit fold are equal. <b>E2</b> E1 plus a ridge regression from the final-norm hidden state at the answer position to the label (±1), written into the two label rows with opposite sign; ridge λ = n on standardised features. All on an untied copy of lm_head; verified by applying the real edited matrix and rescoring with the ordinary scorer (hearsay fold 0: real 0.64 vs offline 0.64).</li>
-    <li><b>Means over ten tasks:</b> majority 0.546, E0 0.568, E1 0.673, E2 0.775, best probe 0.842.</li>
-    <li>The probe peaks between layers 9 and 19 on most tasks; the ability is computed mid-network and poorly expressed by the output head. This is an edit with no gradient step, consistent with the project's premise, and it adds no knowledge: it reads what is there.</li>
-  </ul>
-</details>
-
-<h2>5. The hearsay direction</h2>
-<p>If the model knows hearsay in its middle layers, is there a single direction in its activation space that means "this is hearsay"? Partly. There is a direction that sorts hearsay examples at 0.73, and it is specific to hearsay. But it is a label the model carries, not the lever it answers with.</p>
-<div class="plain">
-  <div class="eyebrow">Plain words</div>
-  <p>We found a dial inside the model that correlates with hearsay. Then we tried turning it. Turning it, at every layer and every position, with any strength, never made the answers more correct. The best any setting reached was the score you get by answering No to everything. What the dials did do is change the answers wholesale: a second dial, taken from the "overruling" task, turns out to be the model's plain Yes/No lever, and it can drive the fraction of Yes answers from zero to 98 percent. Turning both dials together was no better than either. The reason is simple: a dial adds the same push to every question, so it can only move the threshold, not tell one question from another.</p>
-</div>
-
-<figure id="fig-dir">
-  <div class="title">How well the hearsay direction reads, by layer</div>
-  <div class="subtitle">Two-fold accuracy on 94 hearsay items, Qwen3.5-0.8B. Majority class 0.56.</div>
-  <div class="legend"><span><i class="line" style="background:var(--s1)"></i>mean-difference direction</span><span><i class="line" style="background:var(--s2)"></i>ridge probe (full readout)</span><span><i class="ref"></i>majority 0.56</span></div>
-  <div class="chartwrap" data-chart="dir"></div>
-  <figcaption>The single direction peaks at 0.73 (layers 11 and 17). The full linear probe reaches 0.79 at layers 17 to 21. The direction's cosine with the model's output Yes-minus-No vector is −0.02, and no other task's direction reads hearsay above 0.62.</figcaption>
-</figure>
-
-<figure id="fig-steer">
-  <div class="title">Steering: what moves and what does not</div>
-  <div class="subtitle">Fraction of hearsay items answered Yes when a direction is added at one layer (last position), strength ±4 sd. Unsteered 0.245.</div>
-  <div class="legend"><span><i class="line" style="background:var(--s2)"></i>overruling direction, +4</span><span><i class="line" style="background:var(--s2);opacity:.45"></i>overruling, −4</span><span><i class="line" style="background:var(--s1)"></i>hearsay direction, +4</span><span><i class="line" style="background:var(--s1);opacity:.45"></i>hearsay, −4</span></div>
-  <div class="chartwrap" data-chart="steer"></div>
-  <figcaption>Over 576 settings (24 layers × last or every position × four strengths × three direction sets), hearsay accuracy never exceeds 0.564, the majority rate. The overruling direction is a late-layer answer knob. The hearsay direction's sign is reversed in the late layers: its "No" side produces more Yes answers. Adding the two is no better than either; their cosine in the late layers is about −0.19.</figcaption>
-  <details class="data"><summary>Data table</summary><div class="tablewrap" data-table="steer"></div></details>
-</figure>
-
-<details class="tech"><summary>Technical detail</summary>
-  <ul>
-    <li><b>Direction.</b> Unit mean difference of the residual at the answer position between Yes and No hearsay items, per layer; two-fold by item parity for every reported accuracy and for the steering vectors (an item is steered by the direction fit on the other fold).</li>
-    <li><b>Specificity.</b> Cosine with the nine other tasks' same-layer directions at most 0.21; the overruling direction reads hearsay at 0.62, the rest at 0.46 to 0.59. Logit lens of the direction is uninterpretable, as expected mid-network.</li>
-    <li><b>Causality.</b> First run: ±4 sd at layer 11, last position, moves the fraction of Yes from 0.245 to 0.255 and changes 0 to 4% of answers on other tasks. Sweep: all layers, last and every position, γ ∈ {−4, −2, 2, 4}, directions H, O and H+O. Best accuracies: H 0.553, O 0.564, H+O 0.564. Side effects of the best H setting (layer 4, every position, +4): 2 to 30% of answers change on other tasks; best H+O (layer 14, last, −4): 0 to 35%.</li>
-    <li><b>Why a bias cannot do it.</b> A constant added vector shifts the decision threshold; the best threshold on the model's own ranking of hearsay items is at majority (the E1 calibration edit scores 0.49). The item-specific information the probe reads is extracted by a weight (E2 0.63, probe 0.79), not a bias.</li>
-    <li><b>Form, not only law.</b> The items projecting highest on the direction are long litigation narratives with quoted statements; the lowest are the short "On the issue of whether X, the fact that Y" template items, which are mostly No.</li>
-  </ul>
-</details>
-
-<h2>6. Chords: a circuit you can play</h2>
-<p>The bigram path is one key per note. The owner asked for the music theory: a circuit that says "after these two words, this third one". That is a trigram, and in a transformer it needs three parts: a way to see the previous word, a detector that fires only for a specific pair, and an output that says what comes next.</p>
-<div class="plain">
-  <div class="eyebrow">Plain words</div>
-  <p>We built a key that only sounds when two particular notes were just played. That part is exact: it fires at full strength for its own pair and essentially never otherwise. The hard part was making it play the right third note loudly enough without drowning the melody. Every closed-form way of setting that output either squashed the signal it was adding to or missed. So the owner allowed optimisation for this one part, with a strict rule: tune on training text, stop by watching separate validation text, and report once on test text never seen. That took the small model from a gain of 0.04 to a gain of 0.52, halfway to a true word-pair model, and the improvement carried over to a second corpus the fit never saw.</p>
-</div>
+<h3>4b. The two-word circuit</h3>
+<p>A word-pair table only ever looks at the previous word. The next step up is a rule of the form "after <em>A</em> then <em>B</em>, expect <em>C</em>". Inside a transformer that needs three parts, and we wrote all three by hand into the Pythia models:</p>
+<ol class="steps">
+  <li><b>A way to see the previous word.</b> One attention head, written from a formula, copies a code for the previous word into a reserved slot. We measured it: the copy is 99.996% faithful.</li>
+  <li><b>A detector for each word pair.</b> One neuron per pair (10,240 pairs in the small model, 33,792 in the larger one, the commonest pairs in the training text). Each fires only when its own pair has just occurred. We measured that too: a true pair scores 16.0 on a scale where anything below 0 is silent; the wrong pair scores −4 or −12; false alarms happen at 0.1% of positions.</li>
+  <li><b>An output for each detector</b> that pushes the prediction towards the words that followed that pair in the training text.</li>
+</ol>
+<p>Parts 1 and 2 worked exactly as designed, from formulas. Part 3 did not. Every formula we tried for the output either drowned out the word-pair signal it was adding to, or missed. The reason is a normalisation step every transformer applies: the overall size of the internal signal is held fixed, so adding a push in one direction shrinks everything else. There is no formula for the right balance across 10,000 detectors.</p>
+<p>So for part 3, and only part 3, I allowed optimisation: the output numbers were adjusted iteratively to improve prediction on the training text. To make sure this measured learning and not memorising, the usual discipline applied. The text was split three ways. The <dfn>training</dfn> split was used to adjust the numbers. A separate <dfn>validation</dfn> split was checked every 100 steps, and adjustment stopped when it stopped improving. The <dfn>test</dfn> split was scored once, at the end, and is the number reported.</p>
 
 <figure id="fig-chords">
-  <div class="title">Chords on the two Pythia models</div>
-  <div class="subtitle">WikiText test cross-entropy, nats per token, mean of three seeds. Lower is better.</div>
-  <div class="legend"><span><i style="background:var(--s1)"></i>A9C layout only, no chord neurons</span><span><i style="background:var(--s2)"></i>A9 chords, closed-form output</span><span><i style="background:var(--s3)"></i>A10 chords, output fitted by optimisation</span><span><i class="ref"></i>bigram 6.10 · trigram 6.02</span></div>
+  <div class="title">The two-word circuit, before and after tuning its output</div>
+  <div class="subtitle">Nats per word on the Wikipedia test split; mean of three seeds; lower is better.</div>
+  <div class="legend"><span><i style="background:var(--s1)"></i>word-pair table only (same layout, no detectors)</span><span><i style="background:var(--s2)"></i>detectors with formula-written output</span><span><i style="background:var(--s3)"></i>detectors with tuned output</span><span><i class="ref"></i>word-pair yardstick 6.10</span></div>
   <div class="chartwrap" data-chart="chords"></div>
-  <figcaption id="chords-caption">Pythia-70M: 10,240 chord neurons cover 40% of positions; Pythia-160M: 33,792 cover 54%. The closed-form output gained 0.04 nat on 70M and nothing on 160M. With the output columns fitted, 70M reaches 6.72 on test (validation 6.67) and 160M reaches 6.66 (validation 6.60): the larger model's extra neurons, which hurt in closed form, help once their output is fitted.</figcaption>
+  <figcaption>The formula-written output gained 0.04 nats on the small model and nothing on the larger one. With the output tuned, the small model goes from 7.24 to 6.72 and the larger from 7.26 to 6.66: in guesses per word, from about 1,400 to about 780. The circuit's detection was never the problem; its voice was.</figcaption>
   <details class="data"><summary>Data table</summary><div class="tablewrap" data-table="chords"></div></details>
 </figure>
 
 <figure id="fig-curve">
-  <div class="title">The fit, watched on held-out text</div>
-  <div class="subtitle">Validation cross-entropy during the A10 fit, evaluated every 100 steps on 50k validation tokens never used for the gradient.</div>
-  <div class="legend"><span><i class="line" style="background:var(--s1)"></i>Pythia-70M seed 0</span><span><i class="line" style="background:var(--s2)"></i>Pythia-160M seed 0</span><span><i class="ref"></i>bigram line 6.10</span></div>
+  <div class="title">Watching the tuning on text it never trained on</div>
+  <div class="subtitle">Validation score every 100 steps. The tuning only ever saw the training split.</div>
+  <div class="legend"><span><i class="line" style="background:var(--s1)"></i>Pythia-70M</span><span><i class="line" style="background:var(--s2)"></i>Pythia-160M</span><span><i class="ref"></i>word-pair yardstick 6.10</span></div>
   <div class="chartwrap" data-chart="curve"></div>
-  <figcaption>Train loss sits around 5.5 to 5.9 while validation keeps falling, so the free weights are learning the corpus, not memorising the batch. All three 70M seeds were still improving at the 4,000-step cap; the it was not raised. The three 160M seeds were stopped by the validation rule at steps 3,300 to 3,600. The curves flatten: the last thousand 70M steps gained 0.02 nat, and the remaining gap to the bigram line is over 0.5 nat, so the cap is not the limit.</figcaption>
+  <figcaption>If the tuning were memorising the training batches, the validation score would stop improving or get worse. It keeps improving, then flattens. The larger model was stopped by the validation rule at about step 3,300; the smaller hit a 4,000-step cap while still improving slowly, and I chose not to raise it: the last thousand steps gained 0.02 nats and the gap to the word-pair line is over 0.5. The circuit also improved the models' score on a second, unrelated corpus of children's stories that the tuning never saw.</figcaption>
 </figure>
 
-<details class="tech"><summary>Technical detail</summary>
+<p><b>Why it stops there.</b> The detectors cover the commonest pairs, which account for 40% of positions in the small model and 54% in the larger. Everywhere else the model falls back on the compressed word-pair table. And the training corpus is small (1.8 million words), so most three-word sequences are too rare to have reliable counts: the ideal three-word counting model is only 0.08 nats better than the two-word one on this corpus. A bigger corpus would raise the ceiling for everything here.</p>
+<details class="tech"><summary>Method and numbers</summary>
   <ul>
-    <li><b>Layout.</b> Residual split B + K + K with K = head_dim = 64: a bigram subspace of rank B = d − 2K (A8 recipe, untied), a fixed random ±1/√K code per token in a "current" slot, and a "previous" slot written by one RoPE previous-token head at layer 0 (copy cosine 0.99996). Embedding rows scaled to a common norm so every code slot has the same magnitude after every LayerNorm.</li>
-    <li><b>Detector.</b> One neuron per context (a, b), the most frequent (L−1)·d_mlp pairs with n(ab) ≥ 3: input weight = code_b on the current slot + code_a on the previous slot, gain 8, bias −12. A true pair scores 15.97 ± 0.03, a half match −4, idle −12; GELU at −4 is 10⁻⁴, so idle neurons leak nothing. False-firing positions 0.1%.</li>
-    <li><b>Closed-form output (A9).</b> Weighted least squares on the bigram subspace of r_ab = log p3(·|a,b) − log q(·|b), weights p3, ridge 10⁻², divided by gelu(4), times a global scale chosen on the validation split. LayerNorm fixes the output norm, so a correction of norm v shrinks the bigram signal by 1/√(1 + (v/r0)²); every closed-form variant (plain pseudo-inverse, replacement rows) was worse.</li>
-    <li><b>Fitted output (A10).</b> Only the chord neurons' down-projection columns (bigram-subspace rows) are free: 3.9M weights on 70M, 21.6M on 160M. Adam, lr 3·10⁻³, batches of 8 × 512 tokens from the WikiText train split (the counted text). Early stopping on validation tokens 20k to 70k (disjoint from the 20k slice that chose the A9 scale), patience 6 evaluations, cap 4,000 steps. Test = the standard M1 slice, reported once. This is the project's first gradient step; it is confined to the chord outputs and reported on its own line.</li>
-    <li><b>Results.</b> Pythia-70M: A9C 7.274, A9 7.235, A10 6.717 ± 0.002 (three seeds, all at the step cap); Pythia-160M: A9C 7.255, A9 7.258, A10 6.663 ± 0.006 (stopped by validation at steps 3,300 to 3,600). TinyStories CE also improves on 70M, 8.28 to 8.17, although no TinyStories text was used; on 160M 8.17 to 8.16. Copy accuracy stays 0 (no copy circuit is built). Trigram reference 6.02 is only 0.08 below the bigram line with this corpus (1.8M train tokens), so three-word contexts are mostly too rare to count; a larger corpus would raise both ceilings.</li>
+    <li><b>Layout.</b> The model's internal width d is split as B + K + K with K = 64: a word-pair subspace of rank B = d − 128 (the compressed pair table, separate input and output matrices), a fixed random ±1/√K code per word in a "current word" slot, and a "previous word" slot filled by one rotary-position previous-token head at layer 0. Word vectors are scaled to a common length so each code slot has the same magnitude after every normalisation.</li>
+    <li><b>Detector.</b> One neuron per pair (a, b): input weight = code(b) on the current slot + code(a) on the previous slot, gain 8, bias −12. True pair 15.97 ± 0.03; one-word match −4; no match −12. GELU at −4 is 10⁻⁴, so idle neurons leak nothing.</li>
+    <li><b>Formula output (A9).</b> Weighted least squares on the pair subspace of log p(c | a, b) − log q(c | b), where q is the model's own pair-table prediction, weights p, ridge 10⁻², scaled by the normalisation factor and by a global scale chosen on the validation split.</li>
+    <li><b>Tuned output (A10).</b> Only the detectors' output columns are free (3.9 million numbers in the small model, 21.6 million in the larger); every other weight is frozen at its formula value. Adam, learning rate 3×10⁻³, batches of 8 × 512 words from the WikiText training split. Early stopping on 50,000 validation words (disjoint from the slice used for A9's scale), patience 6 checks, cap 4,000 steps. Test = the standard 100,000-word test slice, scored once.</li>
+    <li><b>Results (three seeds).</b> Pythia-70M: 7.274 (no detectors) → 7.235 (formula) → 6.717 ± 0.002 (tuned). Pythia-160M: 7.255 → 7.258 → 6.663 ± 0.006. TinyStories corpus: 70M 8.28 → 8.17, 160M 8.17 → 8.16, with no TinyStories text in the tuning. Yardsticks on the test slice: word frequencies 7.50, pairs 6.10, triples 6.02.</li>
+    <li>This tuning is the project's only use of gradient-based optimisation. It is confined to the detector outputs and reported on its own line, separate from the formula-only results.</li>
   </ul>
 </details>
 
-<h2>7. What this means</h2>
-<div class="cols">
-  <div>
-    <h3>What it does say</h3>
-    <p><b>The structure is real.</b> Trained weights are far from random in a dozen measurable ways, and those ways reproduce across architectures and sizes.</p>
-    <p><b>The structure is the container, not the content.</b> Everything the spectra, subspaces and outlier channels describe is invariant to which word each direction serves. Authoring the container alone produces a confident, wrong model.</p>
-    <p><b>Content comes from data, and exactly as much as you bring.</b> A word-pair table gives a word-pair model. A chord circuit with a fitted output gives half of a word-pair model's remaining gap, and no more than its corpus holds.</p>
-    <p><b>Circuits can be written exactly.</b> A previous-token head and a pair detector, specified on paper, work in the real architecture at the precision designed. The hard part is always the output, because it has to speak through a normalised, low-rank channel.</p>
-    <p><b>Trained models express less than they know.</b> Qwen's law knowledge is linearly readable in its middle layers at 0.84 and expressed at 0.57; a calculated read-off recovers most of the difference.</p>
-  </div>
-  <div>
-    <h3>What it does not say</h3>
-    <p><b>It is not a safety bypass.</b> Editing weights needs full weight access, and anyone with that already has cheaper known routes to any behaviour. Authoring cannot add knowledge the weights do not hold; the Rung 3 edits read out what was already there, and the chords know only their corpus.</p>
-    <p><b>Steering is not understanding.</b> A direction that sorts examples is not the direction the model decides with. Pushing on it moved answers, never their correctness.</p>
-    <p><b>Scale is small.</b> Eight models from 1M to 0.8B parameters; nothing here was measured on a frontier model.</p>
-    <p><b>Several things were decided after seeing results.</b> H14 to H19, conditions A6 to A10, the Rung 3 edits, the hearsay work and the steering sweep are post-freeze and are marked as such in every table.</p>
-  </div>
-</div>
-
-<h2>8. How to check any number here</h2>
+<h2>5. Is anything better than the real trained model?</h2>
+<div class="answer"><p><b>At predicting text, no, and it is not close.</b> The best hand-built model scores 6.66; the trained model of the same size scores 3.61. That is 780 guesses per word against 37.</p>
+<p style="margin-top:10px"><b>At the law tasks, yes.</b> A formula-written edit to the trained Qwen3.5-0.8B raises its average over ten LegalBench tasks from 0.57 to 0.78, with no training and no new data beyond the task's own examples. It works by reading out knowledge the model already had.</p></div>
+<p>Here is how the law result was obtained, step by step.</p>
 <ol class="steps">
-  <li>Every chart on this page is drawn from the CSV rows in <span class="key">results/tables/</span>: <span class="key">rung2.csv</span> (ladder), <span class="key">rung3.csv</span> (LegalBench edits), <span class="key">hearsay_direction.csv</span> and <span class="key">hearsay_steer.csv</span>, <span class="key">rung4.csv</span> (chords). Each row carries its git SHA and timestamp.</li>
-  <li>Every decision, including the ones taken after results were seen, is dated in <span class="key">docs/decisions.md</span>, with the builder defaults used.</li>
-  <li>The scripts are <span class="key">analysis/run_rung2.py</span>, <span class="key">run_rung3.py</span>, <span class="key">hearsay_direction.py</span>, <span class="key">hearsay_steer.py</span>, <span class="key">run_rung4_fit.py</span>, and the authoring code is in <span class="key">handi/authoring/</span> (<span class="key">bigram.py</span>, <span class="key">chords.py</span>, <span class="key">generators.py</span>).</li>
+  <li><b>As shipped, Qwen does badly.</b> On the ten tasks its average accuracy is 0.57, barely above the majority rate of 0.55. On hearsay it scores 0.47, below the 0.56 you get by answering No every time.</li>
+  <li><b>We looked inside.</b> A transformer processes a prompt in layers (Qwen has 24), and at each layer there is an internal state, a list of 1,024 numbers, for the position where the answer is about to be produced. For every example in a task, we recorded that state at every layer.</li>
+  <li><b>The answer is in there.</b> A <dfn>linear probe</dfn> is the simplest possible test: can a weighted sum of those 1,024 numbers, with weights fitted on half the examples, predict the correct answer on the other half? For eight of the ten tasks it can, at 0.85 to 1.00, usually from the middle layers. For hearsay the probe reaches 0.79 at layer 17. So the model computes the answer and then fails to say it.</li>
+  <li><b>We wrote the read-out into the model.</b> The last step of a transformer is a table with one row per word; the answer is whichever row scores highest against the final internal state. We changed two rows, the ones for "Yes" and "No". First a correction that removes the model's built-in lean towards one answer (it says No too often). Then the probe's weights, added to the Yes row and subtracted from the No row. Both are closed-form calculations; the model is never trained.</li>
+  <li><b>We tested it honestly.</b> Each task's examples were split in two. The edit was calculated from one half and scored on the other, then the halves were swapped. Every reported number is an example scored by an edit that never saw it. We also applied the edited rows to the real model file and re-ran the ordinary scorer to make sure the offline calculation matched the live model: it did.</li>
 </ol>
 
-<footer>Written by the owner and the Claude, November 2026. Models: GPT-2 small, Pythia-70M, Pythia-160M, Qwen3.5-0.8B, TinyStories 1M/3M/8M/33M. Corpora: WikiText-103, TinyStories, LegalBench (ten classification tasks).</footer>
+<figure id="fig-rung3">
+  <div class="title">LegalBench accuracy, as shipped and after the two-row edit</div>
+  <div class="subtitle">Qwen3.5-0.8B, ten tasks. Edits fitted on half the examples, scored on the other half, both ways.</div>
+  <div class="legend"><span><i style="background:var(--s4)"></i>majority rate (the number to beat)</span><span><i style="background:var(--s1)"></i>as shipped</span><span><i style="background:var(--s2)"></i>after the two-row edit</span><span><i style="background:var(--s3)"></i>linear probe at the best layer (ceiling)</span></div>
+  <div class="chartwrap" data-chart="rung3"></div>
+  <figcaption>Six tasks rise above 0.83. Hearsay goes from 0.47 to 0.63 (ceiling 0.79). Two tasks do not move: citation prediction and New York judicial ethics score at the majority rate at every layer, so the model does not know them anywhere, and no edit of the output can help. The gap between orange and green is what the final layer loses relative to the best middle layer; closing it would need an edit deeper in the model, which we did not do.</figcaption>
+  <details class="data"><summary>Data table</summary><div class="tablewrap" data-table="rung3"></div></details>
+</figure>
+
+<p><b>What this does and does not show.</b> The edit adds no legal knowledge. It is a calculated classifier written into the model's own output table, so that the plain model, with no wrapper and no prompt tricks, answers better. Anyone who trains a small classifier on top of a model's internal states is doing something similar; the difference here is that the result lives inside the weights and was computed by formula. It also shows something about small models in general: they can know more than they say, and the gap is sometimes recoverable without training.</p>
+<details class="tech"><summary>Method and numbers</summary>
+  <ul>
+    <li>E0: the trained model, first-label-token scoring. E1: contextual calibration, each label row shifted along the mean final-state direction so the labels' mean log-probabilities on the fit half are equal. E2: E1 plus a ridge regression (λ = n on standardised features) from the final-norm state at the answer position to the label, written into the two label rows with opposite signs. Edits on an untied copy of the output matrix.</li>
+    <li>Means over ten tasks: majority 0.546, E0 0.568, E1 0.673, E2 0.775, best probe 0.842. Per-task rows and the per-layer probe curve are in results/tables/rung3.csv.</li>
+    <li>Verification on hearsay, fold 0: edited matrix in the live model with the standard scorer 0.64; offline calculation 0.64.</li>
+  </ul>
+</details>
+
+<h2>6. Is there a "hearsay" switch inside the model?</h2>
+<div class="answer"><p><b>There is a hearsay detector, not a switch.</b> One direction in the model's internal state separates hearsay examples from non-hearsay at 0.73 and is specific to hearsay. But pushing the model along that direction never makes its answers more correct. It only changes them.</p></div>
+<p>Since the probe found the answer inside the model, we asked a sharper question: is there a single direction that means "hearsay"? Take the internal state at each layer, average it over the Yes examples and over the No examples, and subtract. That difference is a <dfn>direction</dfn>. Fitted on half the examples, it sorts the other half at 0.73 at the best layers. It is not the same as the model's general Yes/No direction (the two are nearly perpendicular), and the corresponding directions for the other nine tasks do not sort hearsay (0.46 to 0.62).</p>
+
+<figure id="fig-dir">
+  <div class="title">How well the hearsay direction sorts the examples, layer by layer</div>
+  <div class="subtitle">Accuracy on 94 hearsay items, fitted on one half and scored on the other. Majority rate 0.56.</div>
+  <div class="legend"><span><i class="line" style="background:var(--s1)"></i>single direction</span><span><i class="line" style="background:var(--s2)"></i>full linear probe</span><span><i class="ref"></i>majority 0.56</span></div>
+  <div class="chartwrap" data-chart="dir"></div>
+  <figcaption>The single direction peaks at 0.73 (layers 11 and 17). The full probe, which uses all 1,024 numbers rather than one direction, reaches 0.79 in layers 17 to 21. The information is present from layer 1 onwards and sharpest in the second half of the network.</figcaption>
+</figure>
+
+<p>Then we tested whether it is a switch. <dfn>Steering</dfn> means adding a multiple of the direction to the internal state while the model runs, and seeing what it answers. We tried every layer, adding at the answer position only or at every position, at four strengths, and we also tried the "overruling" task's direction, which reads hearsay at 0.62, and the two added together.</p>
+
+<figure id="fig-steer">
+  <div class="title">Steering: the answers move, the accuracy does not</div>
+  <div class="subtitle">Fraction of hearsay items answered Yes when a direction is added at one layer, at four standard deviations. Unsteered: 0.245 answered Yes.</div>
+  <div class="legend"><span><i class="line" style="background:var(--s2)"></i>overruling direction, pushed towards Yes</span><span><i class="line" style="background:var(--s2);opacity:.45"></i>overruling, pushed towards No</span><span><i class="line" style="background:var(--s1)"></i>hearsay direction, pushed towards Yes</span><span><i class="line" style="background:var(--s1);opacity:.45"></i>hearsay, pushed towards No</span></div>
+  <div class="chartwrap" data-chart="steer"></div>
+  <figcaption>The overruling direction turns out to be the model's plain Yes/No lever: in the last layers it drives the share of Yes answers from 0 to 98%. The hearsay direction is a weaker lever and, oddly, backwards in the late layers: pushing towards its "No" side produces more Yes answers. Across all 576 settings, the best accuracy any of them reached was 0.564, exactly the majority rate. Adding the two directions together was no better than either alone.</figcaption>
+  <details class="data"><summary>Data table</summary><div class="tablewrap" data-table="steer"></div></details>
+</figure>
+
+<p><b>Why a direction cannot be a switch here.</b> Steering adds the same push to every example. That can only move the model's threshold between Yes and No; it cannot tell one example from another. The best threshold on the model's own ranking of hearsay examples is no better than majority. What the probe and the two-row edit do differently is multiply each example's state by a set of weights, which produces a different push for each example. That is the difference between a bias and a classifier, and it is why the edit works and steering does not.</p>
+<p>One more caution. The examples that score highest on the hearsay direction are long litigation narratives with a quoted statement in them; the lowest are short template items of the form "On the issue of whether X, the fact that Y", which are mostly No. The direction tracks the <em>form</em> of a hearsay problem at least as much as the law of hearsay.</p>
+<details class="tech"><summary>Method and numbers</summary>
+  <ul>
+    <li>Direction: unit mean difference of the residual state at the answer position between Yes and No items, per layer, two-fold by item parity for every reported number; steering vectors likewise use the direction fitted on the other half, scaled by that half's projection standard deviation.</li>
+    <li>Specificity: cosine with the output Yes-minus-No vector −0.02; cosine with the other nine tasks' same-layer directions at most 0.21.</li>
+    <li>Sweep: 24 layers × {last position, every position} × strength ∈ {−4, −2, +2, +4} standard deviations × {hearsay, overruling, both}. Best accuracies: hearsay 0.553, overruling 0.564, both 0.564; unsteered 0.468. Side effects on the other nine tasks at the best settings: 0 to 35% of answers change.</li>
+    <li>The calibration-only edit (E1, a pure threshold shift) scores 0.49 on hearsay, which is the ceiling for any constant push.</li>
+  </ul>
+</details>
+
+<h2>7. What we conclude</h2>
+<ul class="short">
+  <li><b>The structure in trained weights is real and large</b>, and it reproduces across three architectures and three sizes. It describes the container: how big the signals are and which directions they use.</li>
+  <li><b>The container is not the content.</b> The content is the pairing of each direction with a word, and none of the structural measurements see it. Writing the container without the content gives a confidently wrong model.</li>
+  <li><b>Content can be written from data, and you get exactly what you bring.</b> A word-pair table gives a word-pair model. A two-word circuit with a tuned voice gives half of the remaining gap to a proper two-word model, limited by its corpus.</li>
+  <li><b>Hand-written circuits can be exact.</b> A previous-word copier and a pair detector, specified on paper, work in the real architecture to the precision designed. The difficult part is always the output, because it has to speak through a normalised, narrow channel.</li>
+  <li><b>Trained models can know more than they say.</b> Qwen's legal knowledge is readable inside it at 0.84 on average and expressed at 0.57. A formula can recover most of that difference, and for the two tasks it cannot recover, the reason is visible: the knowledge is not there.</li>
+</ul>
+<h3>What we do not claim</h3>
+<ul class="short">
+  <li><b>No new capability was created.</b> Nothing here adds knowledge to a model. The law edit reads out what was already present; the circuits know only their corpus.</li>
+  <li><b>This is not a safety bypass.</b> Every edit here requires full access to the weights, and anyone with that access already has cheaper, well-known ways to change a model's behaviour. A direction that sorts examples is not the direction the model decides with, and pushing on it did not make the model do anything it could not already do.</li>
+  <li><b>The models are small.</b> One million to 800 million weights. Nothing was measured on a frontier model.</li>
+  <li><b>Some of this was decided after seeing results.</b> Six of the nineteen hypotheses, the word-pair and circuit conditions, the law edits and the steering work were added after the pre-registered results were in. They are marked as such in every table, and the tuned circuit is the only place any optimisation was used.</li>
+</ul>
+
+<h2>8. Glossary</h2>
+<dl class="gloss">
+  <dt>Weights</dt><dd>The numbers inside a model. Training sets them; this project wrote them.</dd>
+  <dt>Layer</dt><dd>One stage of a transformer. Qwen3.5-0.8B has 24; Pythia-70M has 6. Each layer reads the internal state and adds to it.</dd>
+  <dt>Internal state (residual stream)</dt><dd>The list of numbers (512 to 1,024 of them) that a transformer carries for each word position from layer to layer. Everything the model "knows" about the text at that point is in it.</dd>
+  <dt>Cross-entropy, nats</dt><dd>The next-word prediction score. e to the power of the score is the equivalent number of equally likely guesses. Lower is better.</dd>
+  <dt>Word-pair (bigram) model, three-word (trigram) model</dt><dd>Counting models: predict the next word from the previous one, or the previous two. The classic yardsticks.</dd>
+  <dt>Accuracy, majority rate</dt><dd>Fraction of items answered correctly; and the score from always giving the commoner answer.</dd>
+  <dt>Linear probe</dt><dd>A weighted sum of the internal state, fitted to predict a label. The simplest test of whether information is present in a readable form.</dd>
+  <dt>Direction</dt><dd>A fixed pattern of numbers in the internal state; here, the average difference between Yes and No examples.</dd>
+  <dt>Steering</dt><dd>Adding a multiple of a direction to the internal state while the model runs.</dd>
+  <dt>Training, validation and test splits</dt><dd>Three disjoint pieces of text: one to fit on, one to decide when to stop, one to report. Only the test number counts.</dd>
+  <dt>Seed</dt><dd>The random starting point of a run. Repeating with several seeds shows how much a result depends on luck. Every chart here averages three or five.</dd>
+</dl>
+
+<h2>9. How to check any number</h2>
+<p>Every chart is drawn from rows in a results folder, and every row carries the git commit and timestamp of the run that produced it. Every decision, including the ones taken after results were seen, is dated in a decisions file with the defaults used. The code for each experiment is a single script. The repository is private at present; ask me for access and start with <code>docs/decisions.md</code>, then <code>results/tables/</code>.</p>
+
+<footer>Handi project. Written by the Claude and me, November 2026. Models: GPT-2 small, Pythia-70M, Pythia-160M, Qwen3.5-0.8B, TinyStories 1M/3M/8M/33M. Corpora: WikiText-103, TinyStories, LegalBench (ten classification tasks).</footer>
 </div>
 <div class="tip" id="tip"></div>
 
@@ -323,6 +313,8 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--rule);
     el('title', {}, node).textContent = text;
   }
   const fmt = (v, d = 2) => Number(v).toFixed(d);
+  const guesses = n => { const g = Math.exp(n); return g >= 1000 ? Math.round(g / 100) * 100 : Math.round(g / 10) * 10; };
+  const gfmt = n => guesses(n).toLocaleString('en-US') + ' guesses';
 
   // ---------- data (from results/tables/*.csv) ----------
   const ladder = [
@@ -364,10 +356,11 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--rule);
 
   // ---------- helpers ----------
   function svg(parent, w, h) { const s = el('svg', { viewBox: `0 0 ${w} ${h}`, role: 'img' }); parent.appendChild(s); return s; }
-  function axisX(s, x, y, ticks, label, fmtf) {
+  function axisX(s, x, y, ticks, label, fmtf, sub) {
     el('line', { x1: x(ticks[0]), x2: x(ticks[ticks.length - 1]), y1: y, y2: y, stroke: css('--rule'), 'stroke-width': 1 }, s);
-    ticks.forEach(t => { el('line', { x1: x(t), x2: x(t), y1: y, y2: y + 4, stroke: css('--rule') }, s); const tx = el('text', { x: x(t), y: y + 16, 'text-anchor': 'middle', fill: css('--fg-3') }, s); tx.textContent = fmtf ? fmtf(t) : t; });
-    if (label) { const tx = el('text', { x: x(ticks[ticks.length - 1]), y: y + 32, 'text-anchor': 'end', fill: css('--fg-2') }, s); tx.textContent = label; }
+    ticks.forEach(t => { el('line', { x1: x(t), x2: x(t), y1: y, y2: y + 4, stroke: css('--rule') }, s); const tx = el('text', { x: x(t), y: y + 16, 'text-anchor': 'middle', fill: css('--fg-3') }, s); tx.textContent = fmtf ? fmtf(t) : t;
+      if (sub) { const t2 = el('text', { x: x(t), y: y + 29, 'text-anchor': 'middle', fill: css('--fg-3'), 'font-size': 10 }, s); t2.textContent = sub(t); } });
+    if (label) { const tx = el('text', { x: x(ticks[ticks.length - 1]), y: y + (sub ? 45 : 32), 'text-anchor': 'end', fill: css('--fg-2') }, s); tx.textContent = label; }
   }
   function grid(s, x, y0, y1, ticks) { ticks.forEach(t => el('line', { x1: x(t), x2: x(t), y1: y0, y2: y1, stroke: css('--rule-soft'), 'stroke-width': 1 }, s)); }
   function refLine(s, xv, y0, y1, text, x) {
@@ -382,32 +375,33 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--rule);
     rows.forEach(r => { const tr2 = document.createElement('tr'); r.forEach((v, i) => { const td = document.createElement('td'); td.textContent = v; if (i) td.className = 'num'; tr2.appendChild(td); }); t.appendChild(tr2); });
     parent.appendChild(t);
   }
+  const compact = n => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'K' : String(n);
 
-  // ---------- 1. ladder: dot strip per model ----------
+  // ---------- 1. ladder ----------
   (function () {
-    const W = 720, left = 128, right = 16, rowH = 30, top = 28; const H = top + ladder.length * rowH + 44;
+    const W = 720, left = 128, right = 16, rowH = 30, top = 28; const H = top + ladder.length * rowH + 58;
     const s = svg(document.querySelector('[data-chart=ladder]'), W, H);
     const x = scale(0, 45, left, W - right);
-    const ticks = [0, 10, 20, 30, 40, 45];
+    const ticks = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45];
     grid(s, x, top - 6, top + ladder.length * rowH, ticks);
-    refLine(s, 7.50, top - 6, top + ladder.length * rowH, 'unigram', x);
-    refLine(s, 6.10, top - 6, top + ladder.length * rowH, 'bigram', x);
+    refLine(s, 7.50, top - 6, top + ladder.length * rowH, 'word frequencies', x);
+    refLine(s, 6.10, top - 6, top + ladder.length * rowH, '', x);
     ladder.forEach((d, i) => {
       const cy = top + i * rowH + rowH / 2;
       const lab = el('text', { x: left - 8, y: cy + 4, 'text-anchor': 'end', fill: css('--fg') }, s); lab.textContent = d.m;
       el('line', { x1: x(Math.min(d.A5, d.A8, d.A0)), x2: x(d.A1), y1: cy, y2: cy, stroke: css('--rule'), 'stroke-width': 1 }, s);
-      dot(s, x(d.A1), cy, css('--s2'), `${d.m} · A1 spectrum-matched: ${fmt(d.A1)} nats`);
-      dot(s, x(d.A0), cy, css('--s1'), `${d.m} · A0 fresh init: ${fmt(d.A0)} nats`);
-      dot(s, x(d.A8), cy, css('--s3'), `${d.m} · A8 bigram direct path: ${fmt(d.A8)} nats`);
-      dot(s, x(d.A5), cy, css('--s4'), `${d.m} · A5 trained: ${fmt(d.A5)} nats`);
+      dot(s, x(d.A1), cy, css('--s2'), `${d.m} · built from structure: ${fmt(d.A1)} nats`);
+      dot(s, x(d.A0), cy, css('--s1'), `${d.m} · random numbers: ${fmt(d.A0)} nats (${gfmt(d.A0)})`);
+      dot(s, x(d.A8), cy, css('--s3'), `${d.m} · word-pair table: ${fmt(d.A8)} nats (${gfmt(d.A8)})`);
+      dot(s, x(d.A5), cy, css('--s4'), `${d.m} · trained: ${fmt(d.A5)} nats (${gfmt(d.A5)})`);
     });
-    axisX(s, x, top + ladder.length * rowH + 6, ticks, 'cross-entropy, nats per token (lower is better)');
-    table(document.querySelector('[data-table=ladder]'), ['model', 'A0 fresh', 'A1 spectrum', 'A8 bigram path', 'A5 trained'], ladder.map(d => [d.m, fmt(d.A0), fmt(d.A1), fmt(d.A8), fmt(d.A5)]));
+    axisX(s, x, top + ladder.length * rowH + 6, ticks, 'nats per word (lower is better); second row: equivalent guesses', null, t => t <= 15 ? compact(guesses(t)) : '');
+    table(document.querySelector('[data-table=ladder]'), ['model', 'random numbers', 'built from structure', 'word-pair table', 'trained'], ladder.map(d => [d.m, fmt(d.A0), fmt(d.A1), fmt(d.A8), fmt(d.A5)]));
   })();
 
-  // ---------- 2. A8 bars with reference lines ----------
+  // ---------- 2. A8 bars ----------
   (function () {
-    const W = 720, left = 128, right = 16, rowH = 26, top = 28; const H = top + ladder.length * rowH + 44;
+    const W = 720, left = 128, right = 16, rowH = 26, top = 28; const H = top + ladder.length * rowH + 58;
     const s = svg(document.querySelector('[data-chart=a8]'), W, H);
     const x = scale(5.5, 8.5, left, W - right);
     const ticks = [5.5, 6, 6.5, 7, 7.5, 8, 8.5];
@@ -420,14 +414,14 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--rule);
       el('rect', { x: x(5.5), y: cy - 9, width: x(d.A8) - x(5.5), height: 18, fill: color, rx: 4 }, g);
       el('rect', { x: x(5.5), y: cy - 9, width: 4, height: 18, fill: color }, g);
       const v = el('text', { x: x(d.A8) + 6, y: cy + 4, fill: css('--fg-2') }, g); v.textContent = fmt(d.A8);
-      hover(g, `${d.m} · A8: ${fmt(d.A8)} nats (${d.tied ? 'tied' : 'untied'} embeddings)` + (d.uni ? ` · its own unigram ${d.uni}, bigram ${d.bi}` : ''));
+      hover(g, `${d.m} · word-pair table: ${fmt(d.A8)} nats (${gfmt(d.A8)}), ${d.tied ? 'shared' : 'separate'} word tables` + (d.uni ? ` · its own yardsticks: frequencies ${d.uni}, pairs ${d.bi}` : ''));
     });
-    refLine(s, 7.50, top - 6, top + ladder.length * rowH, 'unigram 7.50', x);
-    refLine(s, 6.10, top - 6, top + ladder.length * rowH, 'bigram 6.10', x);
-    axisX(s, x, top + ladder.length * rowH + 6, ticks, 'nats per token', t => fmt(t, 1));
+    refLine(s, 7.50, top - 6, top + ladder.length * rowH, 'knows word frequencies 7.50', x);
+    refLine(s, 6.10, top - 6, top + ladder.length * rowH, 'knows word pairs 6.10', x);
+    axisX(s, x, top + ladder.length * rowH + 6, ticks, 'nats per word; second row: equivalent guesses', t => fmt(t, 1), t => compact(guesses(t)));
   })();
 
-  // ---------- 3. Rung 3 dot plot ----------
+  // ---------- 3. Rung 3 ----------
   (function () {
     const W = 720, left = 190, right = 16, rowH = 30, top = 24; const H = top + rung3.length * rowH + 44;
     const s = svg(document.querySelector('[data-chart=rung3]'), W, H);
@@ -438,13 +432,13 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--rule);
       const cy = top + i * rowH + rowH / 2;
       const lab = el('text', { x: left - 8, y: cy + 4, 'text-anchor': 'end', fill: css('--fg') }, s); lab.textContent = d.t;
       el('line', { x1: x(Math.min(d.E0, d.E2, d.maj)), x2: x(Math.max(d.E2, d.probe)), y1: cy, y2: cy, stroke: css('--rule'), 'stroke-width': 1 }, s);
-      dot(s, x(d.maj), cy, css('--s4'), `${d.t} · majority class: ${fmt(d.maj)}`);
-      dot(s, x(d.E0), cy, css('--s1'), `${d.t} · E0 as trained: ${fmt(d.E0)}`);
-      dot(s, x(d.probe), cy, css('--s3'), `${d.t} · best probe (layer ${d.L}): ${fmt(d.probe)}`);
-      dot(s, x(d.E2), cy, css('--s2'), `${d.t} · E2 edited output rows: ${fmt(d.E2)}`);
+      dot(s, x(d.maj), cy, css('--s4'), `${d.t} · majority rate: ${fmt(d.maj)}`);
+      dot(s, x(d.E0), cy, css('--s1'), `${d.t} · as shipped: ${fmt(d.E0)}`);
+      dot(s, x(d.probe), cy, css('--s3'), `${d.t} · probe at layer ${d.L}: ${fmt(d.probe)}`);
+      dot(s, x(d.E2), cy, css('--s2'), `${d.t} · after the two-row edit: ${fmt(d.E2)}`);
     });
-    axisX(s, x, top + rung3.length * rowH + 6, ticks, 'accuracy', t => fmt(t, 1));
-    table(document.querySelector('[data-table=rung3]'), ['task', 'majority', 'E0', 'E2', 'best probe', 'probe layer'], rung3.map(d => [d.t, fmt(d.maj, 3), fmt(d.E0, 3), fmt(d.E2, 3), fmt(d.probe, 3), d.L]));
+    axisX(s, x, top + rung3.length * rowH + 6, ticks, 'accuracy (fraction correct)', t => fmt(t, 1));
+    table(document.querySelector('[data-table=rung3]'), ['task', 'majority', 'as shipped', 'after edit', 'probe ceiling', 'probe layer'], rung3.map(d => [d.t, fmt(d.maj, 3), fmt(d.E0, 3), fmt(d.E2, 3), fmt(d.probe, 3), d.L]));
   })();
 
   // ---------- line chart helper ----------
@@ -457,60 +451,59 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--rule);
     series.forEach(sr => {
       const pts = sr.pts.map(p => [x(p[0]), y(p[1])]);
       el('path', { d: 'M' + pts.map(p => p.join(',')).join('L'), fill: 'none', stroke: sr.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', opacity: sr.opacity || 1 }, s);
-      if (sr.dots) sr.pts.forEach((p, i) => { const g = el('g', {}, s); el('circle', { cx: x(p[0]), cy: y(p[1]), r: 7, fill: 'transparent' }, g); el('circle', { cx: x(p[0]), cy: y(p[1]), r: 3.5, fill: sr.color, stroke: css('--surface'), 'stroke-width': 2, opacity: sr.opacity || 1 }, g); hover(g, `${sr.name} · ${opts.xname} ${p[0]}: ${fmt(p[1], opts.d || 2)}`); });
+      if (sr.dots) sr.pts.forEach(p => { const g = el('g', {}, s); el('circle', { cx: x(p[0]), cy: y(p[1]), r: 7, fill: 'transparent' }, g); el('circle', { cx: x(p[0]), cy: y(p[1]), r: 3.5, fill: sr.color, stroke: css('--surface'), 'stroke-width': 2, opacity: sr.opacity || 1 }, g); hover(g, `${sr.name} · ${opts.xname} ${p[0]}: ${fmt(p[1], opts.d || 2)}`); });
       const last = pts[pts.length - 1]; if (sr.label) { const t = el('text', { x: last[0] + 5, y: last[1] + 4, fill: css('--fg-2') }, s); t.textContent = sr.label; }
     });
-    const xt = opts.xt; el('line', { x1: left, x2: W - right, y1: H - bottom, y2: H - bottom, stroke: css('--rule') }, s);
-    xt.forEach(t => { const tx = el('text', { x: x(t), y: H - bottom + 16, 'text-anchor': 'middle', fill: css('--fg-3') }, s); tx.textContent = t; });
+    el('line', { x1: left, x2: W - right, y1: H - bottom, y2: H - bottom, stroke: css('--rule') }, s);
+    opts.xt.forEach(t => { const tx = el('text', { x: x(t), y: H - bottom + 16, 'text-anchor': 'middle', fill: css('--fg-3') }, s); tx.textContent = t; });
     const xl = el('text', { x: W - right, y: H - 6, 'text-anchor': 'end', fill: css('--fg-2') }, s); xl.textContent = opts.xlabel;
     return s;
   }
 
   // ---------- 4. direction by layer ----------
   lines(document.querySelector('[data-chart=dir]'), [
-    { name: 'mean-difference direction', pts: dirAcc.map((v, i) => [i, v]), color: css('--s1'), dots: true },
-    { name: 'ridge probe', pts: ridgeAcc.map((v, i) => [i, v]), color: css('--s2'), dots: true },
+    { name: 'single direction', pts: dirAcc.map((v, i) => [i, v]), color: css('--s1'), dots: true },
+    { name: 'full probe', pts: ridgeAcc.map((v, i) => [i, v]), color: css('--s2'), dots: true },
   ], { x0: 0, x1: 23, y0: 0.5, y1: 0.85, yt: [0.5, 0.6, 0.7, 0.8], xt: [0, 4, 8, 12, 16, 20, 23], xlabel: 'layer', xname: 'layer', ref: 0.564, refLabel: 'majority 0.56', yf: t => fmt(t, 2) });
 
   // ---------- 5. steering ----------
   lines(document.querySelector('[data-chart=steer]'), [
-    { name: 'overruling direction +4', pts: steer['O+4'].map((v, i) => [i, v]), color: css('--s2'), dots: true },
-    { name: 'overruling direction −4', pts: steer['O-4'].map((v, i) => [i, v]), color: css('--s2'), dots: true, opacity: 0.45 },
-    { name: 'hearsay direction +4', pts: steer['H+4'].map((v, i) => [i, v]), color: css('--s1'), dots: true },
-    { name: 'hearsay direction −4', pts: steer['H-4'].map((v, i) => [i, v]), color: css('--s1'), dots: true, opacity: 0.45 },
-  ], { x0: 0, x1: 23, y0: 0, y1: 1, yt: [0, 0.25, 0.5, 0.75, 1], xt: [0, 4, 8, 12, 16, 20, 23], xlabel: 'layer steered (last position)', xname: 'layer', ref: 0.245, refLabel: 'unsteered 0.245', yf: t => fmt(t, 2), h: 280 });
-  table(document.querySelector('[data-table=steer]'), ['layer', 'overruling +4', 'overruling −4', 'hearsay +4', 'hearsay −4'], steer['O+4'].map((_, i) => [i, fmt(steer['O+4'][i]), fmt(steer['O-4'][i]), fmt(steer['H+4'][i]), fmt(steer['H-4'][i])]));
+    { name: 'overruling direction, towards Yes', pts: steer['O+4'].map((v, i) => [i, v]), color: css('--s2'), dots: true },
+    { name: 'overruling direction, towards No', pts: steer['O-4'].map((v, i) => [i, v]), color: css('--s2'), dots: true, opacity: 0.45 },
+    { name: 'hearsay direction, towards Yes', pts: steer['H+4'].map((v, i) => [i, v]), color: css('--s1'), dots: true },
+    { name: 'hearsay direction, towards No', pts: steer['H-4'].map((v, i) => [i, v]), color: css('--s1'), dots: true, opacity: 0.45 },
+  ], { x0: 0, x1: 23, y0: 0, y1: 1, yt: [0, 0.25, 0.5, 0.75, 1], xt: [0, 4, 8, 12, 16, 20, 23], xlabel: 'layer at which the push is added', xname: 'layer', ref: 0.245, refLabel: 'unsteered 0.245', yf: t => fmt(t, 2), h: 280 });
+  table(document.querySelector('[data-table=steer]'), ['layer', 'overruling, towards Yes', 'overruling, towards No', 'hearsay, towards Yes', 'hearsay, towards No'], steer['O+4'].map((_, i) => [i, fmt(steer['O+4'][i]), fmt(steer['O-4'][i]), fmt(steer['H+4'][i]), fmt(steer['H-4'][i])]));
 
-  // ---------- 6. chords grouped bars ----------
+  // ---------- 6. chords ----------
   (function () {
-    const W = 720, left = 110, right = 16, top = 28, rowH = 22, gap = 18; const H = top + chords.length * (3 * rowH + gap) + 44;
+    const W = 720, left = 110, right = 16, top = 28, rowH = 22, gap = 18; const H = top + chords.length * (3 * rowH + gap) + 58;
     const s = svg(document.querySelector('[data-chart=chords]'), W, H);
     const x = scale(5.5, 7.5, left, W - right);
     const ticks = [5.5, 6, 6.5, 7, 7.5];
-    grid(s, x, top - 6, H - 44, ticks);
-    const keys = [['A9C', css('--s1'), 'layout only'], ['A9', css('--s2'), 'closed-form chords'], ['A10', css('--s3'), 'fitted chords']];
+    const yb = top + chords.length * (3 * rowH + gap) - gap + 6;
+    grid(s, x, top - 6, yb, ticks);
+    const keys = [['A9C', css('--s1'), 'word-pair table only'], ['A9', css('--s2'), 'formula-written output'], ['A10', css('--s3'), 'tuned output']];
     chords.forEach((d, i) => {
       const y0 = top + i * (3 * rowH + gap);
       const lab = el('text', { x: left - 8, y: y0 + 1.5 * rowH + 4, 'text-anchor': 'end', fill: css('--fg') }, s); lab.textContent = d.m;
       keys.forEach(([k, color, name], j) => {
         const cy = y0 + j * rowH + rowH / 2; const v = d[k]; const g = el('g', {}, s);
-        if (v == null) { const t = el('text', { x: x(5.5) + 6, y: cy + 4, fill: css('--fg-3') }, g); t.textContent = 'A10 · running'; return; }
         el('rect', { x: x(5.5), y: cy - 9, width: x(v) - x(5.5), height: 18, fill: color, rx: 4 }, g);
         el('rect', { x: x(5.5), y: cy - 9, width: 4, height: 18, fill: color }, g);
         const t = el('text', { x: x(v) + 6, y: cy + 4, fill: css('--fg-2') }, g); t.textContent = fmt(v);
-        hover(g, `${d.m} · ${k} ${name}: ${fmt(v, 3)} nats`);
+        hover(g, `${d.m} · ${name}: ${fmt(v, 3)} nats (${gfmt(v)})`);
       });
     });
-    refLine(s, 6.10, top - 6, H - 44, 'bigram 6.10', x);
-    refLine(s, 6.02, top - 6, H - 44, '', x);
-    axisX(s, x, H - 38, ticks, 'WikiText test cross-entropy, nats per token', t => fmt(t, 1));
-    table(document.querySelector('[data-table=chords]'), ['model', 'A9C', 'A9', 'A10'], chords.map(d => [d.m, fmt(d.A9C, 3), fmt(d.A9, 3), d.A10 == null ? 'running' : fmt(d.A10, 3)]));
+    refLine(s, 6.10, top - 6, yb, 'knows word pairs 6.10', x);
+    axisX(s, x, yb, ticks, 'nats per word; second row: equivalent guesses', t => fmt(t, 1), t => compact(guesses(t)));
+    table(document.querySelector('[data-table=chords]'), ['model', 'word-pair table only', 'formula output', 'tuned output'], chords.map(d => [d.m, fmt(d.A9C, 3), fmt(d.A9, 3), fmt(d.A10, 3)]));
   })();
 
   // ---------- 7. validation curve ----------
   lines(document.querySelector('[data-chart=curve]'), [
-    { name: 'Pythia-70M seed 0', pts: curve70, color: css('--s1'), dots: true, label: '70M' },
-    { name: 'Pythia-160M seed 0', pts: curve160, color: css('--s2'), dots: true, label: '160M' },
-  ], { x0: 0, x1: 4000, y0: 6.0, y1: 7.3, yt: [6.0, 6.25, 6.5, 6.75, 7.0, 7.25], xt: [0, 1000, 2000, 3000, 4000], xlabel: 'optimisation step', xname: 'step', ref: 6.10, refLabel: 'bigram 6.10', yf: t => fmt(t, 2), d: 3 });
+    { name: 'Pythia-70M', pts: curve70, color: css('--s1'), dots: true, label: '70M' },
+    { name: 'Pythia-160M', pts: curve160, color: css('--s2'), dots: true, label: '160M' },
+  ], { x0: 0, x1: 4000, y0: 6.0, y1: 7.3, yt: [6.0, 6.25, 6.5, 6.75, 7.0, 7.25], xt: [0, 1000, 2000, 3000, 4000], xlabel: 'tuning step', xname: 'step', ref: 6.10, refLabel: 'word pairs 6.10', yf: t => fmt(t, 2), d: 3 });
 })();
 </script>
