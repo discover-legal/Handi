@@ -12,3 +12,6 @@ results/raw/
 
 # Scratch
 *.log
+
+# LegalBench prompts beyond the original ten: kept local only (the datasets carry differing licences)
+tests/fixtures/legalbench_prompts/*

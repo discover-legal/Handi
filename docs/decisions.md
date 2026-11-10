@@ -552,3 +552,12 @@ punishes items with many names. ssla_plaintiff: 378 of 500 items are "Not named"
 picks no word on any item (checked: 0 of 250), so its 0.745 is "Not named" every time (0.746 on all 500);
 weighted, it picks too many words and gets worse with more examples (0.624 down to 0.115). The model's own
 answer scores 0.103. No version finds the named plaintiffs.
+
+### LegalBench prompts out of the repository again (2026-11-10)
+
+Decided by the owner: take the prompt files out. Earlier today 147 base_prompt.txt copies (143 label tasks, the
+four extraction tasks) were committed and pushed at the owner's request, which reversed the earlier choice of
+keeping them local because the LegalBench datasets carry differing licences. They are now untracked again (kept
+on disk, ignored by .gitignore); the original ten stay tracked. They remain in the git history of commits
+9fd59f3 and a02c44b; removing them from history needs a rewrite of the public history and a force push, which
+was not done.
