@@ -1,0 +1,9 @@
+Citation: {{context}}
+Which holding does the case cited at <HOLDING> stand for?
+Choices:
+0: {{choice_0}}
+1: {{choice_1}}
+2: {{choice_2}}
+3: {{choice_3}}
+4: {{choice_4}}
+Answer:

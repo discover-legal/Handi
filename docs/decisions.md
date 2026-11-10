@@ -592,3 +592,29 @@ Not like for like: the paper's models answer by few-shot generation from 0 to 8 
 labelled fit; ours are fitted on 15 or up to 250 labelled items of the task; item sets differ. Extraction, paper
 against our read-out (best size): definition_extraction GPT-4 0.818, ours 0.768; ssla_plaintiff GPT-4 0.920,
 ours 0.746; ssla_company_defendants GPT-4 0.650, ours 0.118; ssla_individual_defendants GPT-4 0.296, ours 0.221.
+
+### LexGLUE: CaseHOLD run, SCOTUS skipped, LEDGAR read beside the model (2026-11-10)
+
+Decided by the owner: try LexGLUE (coastalcph/lex_glue, CC BY 4.0 per its dataset card). Correction recorded: I
+first said its single-answer tasks needed nothing new; LexGLUE has no prompts, LEDGAR has 100 types and SCOTUS
+opinions are long, so each needed a decision. Owner: CaseHOLD with the proposed prompt (citing passage, the five
+holdings numbered 0 to 4, "Answer:", digits as the answer rows as for scalr, no worked examples;
+tests/fixtures/lexglue_prompts/case_hold.txt); SCOTUS skipped (opinions 12,500 tokens typical, up to 91,600, do
+not fit the 8 GB card whole); LEDGAR read beside the model (below).
+
+CaseHOLD (analysis/run_rung3_lexglue.py, rows results/tables/rung3_lexglue.csv), Qwen, test split, everything
+else as run_rung3_all.py. Balanced accuracy (chance 0.20, classes balanced):
+
+| | 15 | 30 | 60 | 120 | half the sample | fit on 500, never-seen 500 |
+|---|---|---|---|---|---|---|
+| as shipped | 0.280 | 0.280 | 0.280 | 0.280 | 0.270 | 0.284 |
+| calibrated (uses no labels) | 0.458 | 0.464 | 0.465 | 0.466 | 0.464 | 0.466 |
+| edited | 0.349 | 0.388 | 0.396 | 0.418 | 0.424 | 0.436 |
+| word counts | 0.200 | 0.196 | 0.200 | 0.200 | 0.216 | 0.208 |
+
+(calibrated row in accuracy; the classes are balanced, so accuracy and balanced accuracy agree to 0.01.)
+Reading: removing the model's lean towards some digits takes it from 0.28 to 0.46 with no labels at all; the
+read-out on top makes it worse at every size (0.35 to 0.44). The right digit depends on which of five holdings
+matches the passage, and its position is random, so a read-out per digit from the final state has nothing
+stable to learn. Word counts are at chance for the same reason. On this task the calibration alone is the
+useful part.
