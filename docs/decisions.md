@@ -474,3 +474,13 @@ all six. The 15 MAUD tasks: edited 0.356, 0.419, 0.486, 0.685 (7 tasks) against 
 does not hold, more examples do not add. Implementation change, no change of result: fit_edit_k now solves each
 ridge in the n x n form when there are fewer examples than state dimensions (the same solution; row edits agree
 to 3e-14 relative and 0 of 6,885 predictions differ on saved states).
+
+### Free-text tasks: per-word read-out for the extraction tasks (2026-11-10)
+
+Decided by the owner: build the extraction read-out, after the whole-prompt Qwen run and the Phi-4-mini run.
+Scope: definition_extraction and the three ssla tasks, whose answers are words copied from the input. The same
+closed-form fit scores each input word "part of the answer" or not from the model's state at that word; the
+words that score high are copied out. This is a read-out beside the model, not an edit of what the model writes:
+the model's own reply is unchanged. Word counts are the baseline. rule_qa, citation_prediction_open and
+sara_numeric need recall or arithmetic and are not in scope. Also decided by the owner: runs use fewer resources
+and may take longer (lowest CPU and disk priority, 2 CPU threads).
