@@ -8,7 +8,7 @@ Prompted by Takehi, Teoh, Zhang & Khattab (MIT CSAIL, Nov 2026, "Sparks of Weigh
 Programming"), where an LLM wrote a 1.48M-weight Go policy as a 336-line program and beat a
 PPO-trained net. Nobody has written a language model this way; the paper's Gemma caveat is that
 weight edits "could not add an ability the model lacked". This is a science experiment, not a
-product. The ultimate target is **law tasks (LegalBench)**, not math. Repo is empty.
+product. The ultimate target is **law tasks (LegalBench)**, not math. 
 
 ## Decisions (3 Nov 2026)
 
