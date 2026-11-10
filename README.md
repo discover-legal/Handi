@@ -3,6 +3,8 @@
 An experiment in writing the weights of a transformer language model without training it, and in what
 that shows about where a trained model keeps its knowledge, including its knowledge of law.
 
+Repository: https://github.com/discover-legal/Handi
+
 **Start with the report:** [`docs/report.html`](docs/report.html) (open it in a browser). It is written for
 readers who are not machine-learning specialists and defines every term it uses.
 
