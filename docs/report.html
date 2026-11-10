@@ -238,7 +238,7 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
 </ul>
 
 <h2>7. How to pull a classifier out of a model yourself</h2>
-<p>The whole of section 4 is about forty lines of Python once the model is loaded. Here is the recipe, written so you can do it to a model of your own. A fuller version with the code is in the repository as <code>docs/cookbook.md</code>.</p>
+<p>The whole of section 4 is about forty lines of Python once the model is loaded. Here is the recipe, written so you can do it to a model of your own. A fuller version with the code is in the repository: <a href="https://github.com/discover-legal/Handi/blob/main/docs/cookbook.md">docs/cookbook.md</a>.</p>
 <ol class="steps">
   <li><b>Pick a task with two one-token answers</b> (" Yes" / " No" work in most tokenisers; check with the tokeniser) and a prompt template that ends exactly where the answer goes, such as <code>Label:</code>. Gather a few hundred labelled examples.</li>
   <li><b>Record the internal state.</b> Run each prompt through the model and keep two things from the last position: the final internal state <code>h</code> (the vector after the final normalisation, 1,024 numbers in Qwen3.5-0.8B) and the full output scores. In Hugging Face this is <code>hidden_states[-1]</code> at the last position and <code>lm_head</code> applied to it.</li>
@@ -264,7 +264,7 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
 </dl>
 
 <h2>9. How to check any number</h2>
-<p>Every chart is drawn from rows in a results folder, and every row carries the git commit and timestamp of the run that produced it. Every decision, including the ones taken after results were seen, is dated in a decisions file with the defaults used. The code for each experiment is a single script. The repository is private at present; ask me for access and start with <code>docs/decisions.md</code>, then <code>results/tables/</code>.</p>
+<p>Every chart is drawn from rows in a results folder, and every row carries the git commit and timestamp of the run that produced it. Every decision, including the ones taken after results were seen, is dated in a decisions file with the defaults used. The code for each experiment is a single script. The repository is public at <a href="https://github.com/discover-legal/Handi">github.com/discover-legal/Handi</a>; start with <code>docs/decisions.md</code>, then <code>results/tables/</code>. The recipe for the output-row edit, with code, is <code>docs/cookbook.md</code>.</p>
 
 <footer>Handi project. Written by the Claude and me, November 2026. Models: GPT-2 small, Pythia-70M, Pythia-160M, Qwen3.5-0.8B, TinyStories 1M/3M/8M/33M. Corpora: WikiText-103, TinyStories, LegalBench (ten classification tasks).</footer>
 </div>
