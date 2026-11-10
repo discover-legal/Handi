@@ -291,7 +291,7 @@ Script analysis/run_rung3_transfer.py, rows results/tables/rung3_transfer.csv (R
 0.940 (n = 500), definition_classification 0.590 -> 0.980 (500), cuad_governing_law 0.617 -> 1.000 (376). The
 other seven tasks have no unseen items (the sample is the whole test set), so their two-fold numbers stand.
 (2) Cross-task: the edit rewrites the shared " Yes" / " No" rows, so one task's edit changes 2% to 97% of
-another task's answers and on average lowers its accuracy. (3) All ten edits summed into one output table:
+another task's answers, with that task's accuracy moving anywhere from -0.45 to +0.31 (mean +0.02): a scramble, not a consistent harm or help. (3) All ten edits summed into one output table:
 overruling 0.82, definition 0.93, cuad 0.97 survive; the other seven fall back to the majority rate or below
 (hearsay 0.56, proa 0.51, nys 0.48). Reading: each edit is a task-specific classifier written into two rows
 that every task shares; it generalises to new items of its own task and does not coexist with the others. A
