@@ -618,3 +618,18 @@ read-out on top makes it worse at every size (0.35 to 0.44). The right digit dep
 matches the passage, and its position is random, so a read-out per digit from the final state has nothing
 stable to learn. Word counts are at chance for the same reason. On this task the calibration alone is the
 useful part.
+
+LEDGAR (analysis/run_rung3_ledgar.py, rows results/tables/rung3_ledgar.csv, hypothesis R3L), beside the model as
+decided by the owner: the model file unchanged, one standardised ridge per type on Qwen's final state (prompt
+"Contract provision: {text}\nThe type of this provision is:", my wording), fitted on 1,000 training provisions
+(one draw, seed 300; 97 of the 100 types present), scored on all 10,000 test provisions:
+
+| | micro-F1 (accuracy) | macro-F1 |
+|---|---|---|
+| read-out on the model's state | 0.685 | 0.477 |
+| word counts, same ridges | 0.660 | 0.493 |
+| always the commonest type | 0.042 | 0.001 |
+
+Reading: with 1,000 labels over 100 types the model's state is about level with word counts (2.5 points ahead
+on accuracy, 1.6 behind on macro-F1). The model as shipped was not scored: it has no single-token answer per
+type, and scoring 100 type names per provision was not part of the decision.

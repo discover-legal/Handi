@@ -1,0 +1,11 @@
+hypothesis,model,family,layer,component,metric,value,null_kind,null_n,null_mean,null_sd,z,ks,ks_null_median,n_rows,n_cols,src_dtype,seed,git_sha,timestamp
+R3L,qwen3.5-0.8b,qwen3_5,ALL,readout,ledgar_micro_f1,0.6849,,10000,,,,,,,,BF16,300,11030d0cbb115329d6f27a34d62a70a554d54682,2026-11-10T22:05:11+00:00
+R3L,qwen3.5-0.8b,qwen3_5,ALL,readout,ledgar_macro_f1,0.4768423356126513,,10000,,,,,,,,BF16,300,11030d0cbb115329d6f27a34d62a70a554d54682,2026-11-10T22:05:11+00:00
+R3L,qwen3.5-0.8b,qwen3_5,ALL,wordcount,ledgar_micro_f1,0.6601,,10000,,,,,,,,BF16,300,11030d0cbb115329d6f27a34d62a70a554d54682,2026-11-10T22:05:11+00:00
+R3L,qwen3.5-0.8b,qwen3_5,ALL,wordcount,ledgar_macro_f1,0.49280118966313924,,10000,,,,,,,,BF16,300,11030d0cbb115329d6f27a34d62a70a554d54682,2026-11-10T22:05:11+00:00
+R3L,qwen3.5-0.8b,qwen3_5,ALL,majority,ledgar_micro_f1,0.0422,,10000,,,,,,,,BF16,300,11030d0cbb115329d6f27a34d62a70a554d54682,2026-11-10T22:05:11+00:00
+R3L,qwen3.5-0.8b,qwen3_5,ALL,majority,ledgar_macro_f1,0.0008098253694108616,,10000,,,,,,,,BF16,300,11030d0cbb115329d6f27a34d62a70a554d54682,2026-11-10T22:05:11+00:00
+R3L,qwen3.5-0.8b,qwen3_5,ALL,n_fit,info_ledgar,1000,,,,,,,,,,BF16,300,11030d0cbb115329d6f27a34d62a70a554d54682,2026-11-10T22:05:11+00:00
+R3L,qwen3.5-0.8b,qwen3_5,ALL,types_in_fit,info_ledgar,97,,,,,,,,,,BF16,300,11030d0cbb115329d6f27a34d62a70a554d54682,2026-11-10T22:05:11+00:00
+R3L,qwen3.5-0.8b,qwen3_5,ALL,n_test,info_ledgar,10000,,,,,,,,,,BF16,300,11030d0cbb115329d6f27a34d62a70a554d54682,2026-11-10T22:05:11+00:00
+R3L,qwen3.5-0.8b,qwen3_5,ALL,vocab,info_ledgar,2607,,,,,,,,,,BF16,300,11030d0cbb115329d6f27a34d62a70a554d54682,2026-11-10T22:05:11+00:00
