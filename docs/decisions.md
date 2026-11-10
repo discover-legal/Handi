@@ -354,3 +354,44 @@ as shipped could not express a distinction it computes" and "it reads the clause
 definition_classification, weakly for overruling, and not shown for cuad_governing_law, where the words alone
 suffice. Not run: the word-count baseline and the untrained model at small fit sizes (10 to 100 labels), which
 is where the trained state would be expected to matter most.
+
+### Rung 3 on all two-label LegalBench tasks, 15 labelled examples each (2026-11-10)
+
+Decided by the owner: run all of LegalBench; use few examples for each, 15. Script analysis/run_rung3_all.py,
+rows results/tables/rung3_all.csv (R3A), trained Qwen3.5-0.8B. 132 of the 162 tasks have two labels and were
+run; none failed. The other 30 have more than two labels, which the two-row edit does not cover: a gap, not
+worked around. Prompts are each task's LegalBench base_prompt.txt (the ten already in tests/fixtures are
+byte-identical to that source; the other 122 were copied from the LegalBench repository and are not committed,
+because the datasets carry differing licences). Builder defaults: per task, 15 items drawn at random (not
+balanced by label) from the collected items (the 500-item sample plus up to 500 never-seen items), 20 draws,
+seed 300; the edit and the word-count ridge are fitted on the same 15 and scored on every other collected item;
+lambda = 15. The same pass also records the full-data scores (two-fold on the sample; fit on 500 and scored on
+never-seen items for the 30 tasks with more than 500 items). The row-edit form of the formula (fit_edit) is used
+throughout, so two-fold numbers for the original ten tasks differ slightly from rung3.csv, whose offline gap
+added alpha x read-out where the row edit adds 2 alpha x read-out (proa 0.853 there, 0.874 here).
+
+Mean over the 132 tasks, 15 labelled examples:
+
+| | majority | as shipped | calibrated | edited | word counts |
+|---|---|---|---|---|---|
+| accuracy | 0.595 | 0.590 | 0.657 | 0.788 | 0.711 |
+| balanced accuracy | 0.500 | 0.562 | 0.659 | 0.733 | 0.651 |
+
+Balanced accuracy, 15 examples: edited above as shipped on 124 tasks, above word counts on 105 (mean +0.082).
+At or above 0.90 on 22 tasks (word counts 1, as shipped 0); at or above 0.80 on 53 (13, 1). By group (edited /
+word counts): CUAD clauses, 38 tasks, 0.878 / 0.745; contract NLI, 14, 0.845 / 0.738; OPP-115, 9, 0.777 / 0.647;
+Learned Hands, 16, 0.696 / 0.590; diversity, 6, 0.691 / 0.503; MAUD, 19, 0.594 / 0.626; supply chain, 10,
+0.541 / 0.546. In plain accuracy the edit is below the majority rate on 33 tasks, nearly all lopsided ones
+(MAUD, supply chain), where 15 random labels cannot beat always answering the common label.
+
+With the full data the word-count baseline closes most of the gap: two-fold mean accuracy over 132 tasks,
+edited 0.860 against word counts 0.819; never-seen items of the 30 large tasks, fitted on 500, edited 0.896
+against word counts 0.861 (as shipped 0.550). Reading: the trained model's state is worth most when labels are
+few (+0.08 balanced accuracy at 15 labels, +0.04 at 500), and on clause-type tasks. It does not help where the
+answer needs a long document (MAUD, supply chain) or recall of law with nothing to read
+(international_citizenship_questions: 0.55 at 15 labels, 0.66 at 500, word counts 0.59 / 0.69).
+
+Limits of this run. Prompts longer than 1,024 tokens keep only their last 1,024, as in every earlier run: 75
+tasks have some truncated prompts, and in 34 (all Learned Hands, most MAUD) more than half are, so there the
+model reads the end of the item without the instruction or the worked examples. Not run: the untrained model at
+15 labels; label-balanced draws of the 15.
