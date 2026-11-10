@@ -484,3 +484,41 @@ words that score high are copied out. This is a read-out beside the model, not a
 the model's own reply is unchanged. Word counts are the baseline. rule_qa, citation_prediction_open and
 sara_numeric need recall or arithmetic and are not in scope. Also decided by the owner: runs use fewer resources
 and may take longer (lowest CPU and disk priority, 2 CPU threads).
+
+### Rung 3 with whole prompts on Qwen (2026-11-10)
+
+Decided by the owner: do not cut long prompts. Run: the 90 tasks whose prompts were cut to the last 1,024 tokens,
+read whole (--max-len 0), sizes 15, 30, 60, 120. Rows: results/tables/rung3_all_uncut.csv. 89 of 90 ran.
+learned_hands_housing ran out of GPU memory twice (longest prompt 6,593 tokens on the 8 GB card): a gap.
+
+Balanced accuracy, mean over the 89 tasks, 15 labelled examples (word counts read the whole text in both runs):
+
+| | raw | edited | word counts |
+|---|---|---|---|
+| cut prompts (rung3_all.csv) | 0.483 | 0.636 | 0.589 |
+| whole prompts | 0.503 | 0.670 | 0.589 |
+
+Edited better with whole prompts on 76 tasks, worse on 12; edited above word counts on 69 of 89 (59 cut).
+Largest gains: learned_hands (15 tasks) 0.690 to 0.793, textualism (2) 0.557 to 0.706; MAUD, CUAD and
+supply_chain change by 0 to 3 points. Whole prompts at 15, 30, 60, 120 examples: edited 0.670, 0.703, 0.744
+(80 tasks), 0.790 (55 tasks); word counts 0.589, 0.637, 0.687, 0.733.
+
+### Rung 3 on a second model: Phi-4-mini-instruct (2026-11-10)
+
+Decided by the owner: try another model, a Nemotron or a Phi. Phi-4-mini-instruct (3.8B, MIT licence) is my
+choice; Nemotron 3 Nano 4B needs its own model code and was not tried (a gap). Same prompts, same formula, 15
+labelled examples, prompts kept to their last 4,096 tokens for GPU memory (17 tasks cut). Rows:
+results/tables/rung3_all_phi.csv, all 153 label tasks ran. Against Qwen of rung3_all.csv (prompts cut to 1,024),
+balanced accuracy, mean over tasks:
+
+| tasks | Qwen raw | Qwen edited | Phi raw | Phi edited | word counts |
+|---|---|---|---|---|---|
+| 132 two-label, 15 examples | 0.562 | 0.733 | 0.679 | 0.763 | 0.651 |
+| 132 two-label, half the sample | 0.562 | 0.816 | 0.678 | 0.842 | 0.765 |
+| 21 many-label, 15 examples | 0.281 | 0.365 | 0.399 | 0.431 | 0.329 |
+| 21 many-label, half the sample | 0.281 | 0.507 | 0.399 | 0.555 | 0.478 |
+
+Reading: Phi is better than Qwen before the edit (raw higher on 108 of 132 two-label tasks) and the edit still
+adds to it; edited Phi is above word counts on 120 of 132 two-label tasks at 15 examples (Qwen 105). The prompt
+lengths differ between the two runs (4,096 against 1,024 tokens), so part of the gap may be prompt length.
+Both runs at low priority (owner: use fewer resources, at most about 30% of the CPU): 7 of 24 cores, nice 19.
