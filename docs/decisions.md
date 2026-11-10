@@ -633,3 +633,14 @@ decided by the owner: the model file unchanged, one standardised ridge per type 
 Reading: with 1,000 labels over 100 types the model's state is about level with word counts (2.5 points ahead
 on accuracy, 1.6 behind on macro-F1). The model as shipped was not scored: it has no single-token answer per
 type, and scoring 100 type names per provision was not part of the decision.
+
+### Bigger models: Qwen3.5-2B, 4B and 9B in 4-bit (2026-11-10)
+
+Decided by the owner: try bigger models, Qwen3.5-2B and 4B, and Qwen3.5-9B in 4-bit (not the slow exact
+offload, not the frontier API test). Same as the Phi-4-mini run: all 153 label tasks, 15 labels, prompts up to
+4,096 tokens, layers on the GPU and token tables on the CPU. The 9B (18 GB in bfloat16) does not fit the 8 GB
+card, so its layers are loaded 4-bit (bitsandbytes NF4, bfloat16 compute, run_rung3_all.py --four-bit); its
+token tables, which hold the label rows, stay uncompressed. Rows marked src_dtype NF4. Output
+results/tables/rung3_all_qwen2b.csv, _qwen4b.csv, _qwen9b_nf4.csv. bitsandbytes installed into .venv for this.
+Check on two tasks, 2B, 15 labels: proa raw 0.854, edited 0.900; overruling raw 0.856, edited 0.916 (0.8B:
+0.53 / 0.67 raw).

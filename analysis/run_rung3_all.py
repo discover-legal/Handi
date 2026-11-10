@@ -43,6 +43,8 @@ Options (owner, 2026-11-10: more labelled examples for the many-label tasks; do 
                  run on the GPU; its token table (input embedding and output table) stays on the CPU, because a
                  4B-class model does not fit an 8 GB card whole. Label scores are the output table times the
                  final state, computed on the CPU in float32.
+  --four-bit     with --hf: the model's layers loaded 4-bit (owner, 2026-11-10: Qwen3.5-9B in 4-bit), token tables
+                 kept bfloat16 on the CPU.
   --no-fresh     skips the never-seen items of the large tasks (and so their fresh rows): the few-label draws
                  then come from the 500-item sample only.
 """
@@ -98,11 +100,20 @@ def ridge_any(X, y, lam):
     return w, float(y.mean() - mu @ w)
 
 
-def load_hf(model_id):
-    """(model, tok, U): layers on the GPU, token table on the CPU, U = output table in float32 on the CPU."""
+def load_hf(model_id, four_bit=False):
+    """(model, tok, U): layers on the GPU, token table on the CPU, U = output table in float32 on the CPU.
+    four_bit: the layers are loaded 4-bit (bitsandbytes NF4, bfloat16 compute) so a 9B model fits the 8 GB card;
+    the token tables stay bfloat16 on the CPU, so the label rows and U are not compressed."""
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
     tok = AutoTokenizer.from_pretrained(model_id)
+    if four_bit:
+        from transformers import BitsAndBytesConfig
+        q = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16,
+                               llm_int8_enable_fp32_cpu_offload=True, llm_int8_skip_modules=["lm_head", "embed_tokens"])
+        dm = {"model.embed_tokens": "cpu", "model.layers": 0, "model.norm": 0, "model.rotary_emb": 0, "lm_head": "cpu"}
+        model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16, quantization_config=q, device_map=dm).eval()
+        return model, tok, model.lm_head.weight.detach().float()
     model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16).eval()
     if getattr(model.lm_head, "bias", None) is not None:
         raise RuntimeError("the output table has a bias; the row edit as written does not cover it")
@@ -230,6 +241,7 @@ def main() -> None:
     ap.add_argument("--cache", default=None)
     ap.add_argument("--hf", default=None)
     ap.add_argument("--no-fresh", action="store_true")
+    ap.add_argument("--four-bit", action="store_true")
     a = ap.parse_args()
     max_len = a.max_len if a.max_len > 0 else 10 ** 9
     if a.cache:
@@ -237,14 +249,14 @@ def main() -> None:
     skip = done_tasks(Path(a.out))
     global COLLECT
     if a.hf:
-        model, tok, U = load_hf(a.hf); COLLECT = make_collect_hf(U)
+        model, tok, U = load_hf(a.hf, a.four_bit); COLLECT = make_collect_hf(U)
     else:
         model, tok = EV.load_trained(a.model)
     t_start = time.time()
     with ResultsWriter(a.out) as w:
         base = dict(hypothesis="R3A", model=a.model, family="qwen3_5", src_dtype="BF16", seed=0, layer="ALL")
         if a.hf:
-            base.update(model=a.hf, family=model.config.model_type)
+            base.update(model=a.hf, family=model.config.model_type, src_dtype="NF4" if a.four_bit else "BF16")
         for k, task in enumerate(a.tasks):
             if task in skip:
                 continue
