@@ -306,3 +306,14 @@ LegalBench train splits (8 and 6 items) score 1.00 as shipped and edited. Every 
 scored by an edit that did not see it. Both tasks are lexically marked (defining sentences say "means" / "is
 defined as"; governing-law clauses say "governed by the laws of"); the finding is that the model as shipped
 could not express a distinction it computes. Cookbook for the edit: docs/cookbook.md.
+
+### Rung 3 cue test (2026-11-10)
+
+Script analysis/run_rung3_cue.py, rows results/tables/rung3_cue.csv (R3C). Edit fitted on the 500-item sample,
+scored on the never-seen items with the cue phrases masked to "[...]" or paraphrased into plain words.
+cuad_governing_law (376 items, 99% of Yes items carry a cue): original 1.000, masked 0.997, paraphrased 0.997
+(as shipped 0.62 -> 0.48 / 0.49). definition_classification (500 items, 60% of Yes items carry a listed cue):
+original 0.980, masked 0.972, paraphrased 0.972 (as shipped 0.59 -> 0.55 / 0.58). The edit does not depend on
+the stock wording; it reads the clause's content (a jurisdiction attached to the agreement; a term given a
+meaning). The cue list for definitions is incomplete (many definitional sentences quote a dictionary without
+"means"), which bounds what the masking can show for that task.
