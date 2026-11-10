@@ -395,3 +395,46 @@ Limits of this run. Prompts longer than 1,024 tokens keep only their last 1,024,
 tasks have some truncated prompts, and in 34 (all Learned Hands, most MAUD) more than half are, so there the
 model reads the end of the item without the instruction or the worked examples. Not run: the untrained model at
 15 labels; label-balanced draws of the 15.
+
+### Rung 3 formula extended to more than two labels; edited model against the raw model on 153 tasks (2026-11-10)
+
+Decided by the owner: extend the formula, try all of LegalBench, benchmark the edited model against the raw
+model. The K-label form (analysis/run_rung3_all.py, fit_edit_k) is the two-label formula written per label:
+calibration unchanged (it was already per label); one standardised ridge per label, from h to +1 for that
+label's items and -1 for the others, lambda = n; U[t_k] += alpha w_k + (alpha b_k / p_mean) mu_hat; alpha =
+2 x spread of the calibrated gap / spread of the read-out, both as the root mean square over label pairs of
+sd(score_k - score_j), the read-out's halved. The answer is the label with the highest first-token score. For
+two labels it is the same edit: row differences against fit_edit at 3e-16 relative, 0 of 18,000 predictions
+differ on synthetic states, and proa, ucc_v_common_law and cuad_price_restrictions rerun through the K-label
+code reproduce all 60 recorded rows. The 132 two-label results were therefore kept, not rerun.
+
+21 further tasks run (3 to 8 labels): abercrombie, canada_tax_court_outcomes, function_of_decision_section,
+insurance_policy_interpretation, oral_argument_question_purpose, scalr, 15 MAUD multiple-choice tasks. Builder
+default for scalr: its labels are the digits 0 to 4, which this tokenizer writes as a space token then the
+digit, so the prompt ends with that space and the digit rows are the label rows. Gap, not worked around, 9
+tasks: citation_prediction_open, definition_extraction, rule_qa, sara_numeric, ssla_company_defendants,
+ssla_individual_defendants, ssla_plaintiff (free-text answers, no fixed label set); successor_liability
+(answers are sets of labels); unfair_tos (Unilateral change and Unilateral termination share their first
+token, and the edit acts on the first token).
+
+Balanced accuracy, mean over tasks (per-task table: docs/legalbench_benchmark.md; rows R3A in rung3_all.csv):
+
+| tasks | n | chance | raw | edited, 15 labels | word counts, 15 labels | edited, two-fold | word counts, two-fold |
+|---|---|---|---|---|---|---|---|
+| all run | 153 | 0.463 | 0.524 | 0.683 | 0.607 | 0.774 | 0.726 |
+| two labels | 132 | 0.500 | 0.562 | 0.733 | 0.651 | 0.816 | 0.765 |
+| 3 to 8 labels | 21 | 0.228 | 0.281 | 0.365 | 0.329 | 0.507 | 0.478 |
+| 3 to 8 labels, not MAUD | 6 | 0.225 | 0.277 | 0.389 | 0.268 | 0.503 | 0.313 |
+| 3 to 8 labels, MAUD | 15 | 0.229 | 0.282 | 0.356 | 0.353 | 0.508 | 0.544 |
+
+Edited above raw on 141 of 153 tasks with 15 labels (148 two-fold); above word counts on 116. Below raw with
+15 labels on 12: citation_prediction_classification, insurance_policy_interpretation, three MAUD tasks,
+nys_judicial_ethics, personal_jurisdiction, sara_entailment, scalr, telemarketing_sales_rule,
+textualism_tool_dictionaries, maud_intervening_event. Reading: the extension works where the two-label edit
+works (abercrombie 0.23 to 0.47 with 15 labels and 0.59 two-fold, word counts 0.18 and 0.14; canada tax court
+0.34 to 0.68 and 0.90) and not where it does not (MAUD: no better than word counts; scalr and
+insurance_policy_interpretation, which need reasoning over the choices: at or below raw). With 15 labels spread
+over up to 8 labels many labels have one fit item or none, so the 15-label scores of the many-label tasks are
+low. Raw = the shipped model with its answer restricted to the label tokens, as in every earlier run; one edit
+per task. Same limits as the entry above (prompts cut to their last 1,024 tokens; random, not label-balanced,
+draws of the 15). The 21 new base_prompt.txt copies are uncommitted with the other 122.
