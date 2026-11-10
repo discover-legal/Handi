@@ -561,3 +561,34 @@ keeping them local because the LegalBench datasets carry differing licences. The
 on disk, ignored by .gitignore); the original ten stay tracked. They remain in the git history of commits
 9fd59f3 and a02c44b; removing them from history needs a rewrite of the public history and a force push, which
 was not done.
+
+### LegalBench: our scores beside the paper's published scores (2026-11-10)
+
+Decided by the owner: compare with published scores. Source: the LegalBench paper (arXiv 2308.11462 v1),
+appendix Tables 60 to 79, per-task scores of GPT-4, GPT-3.5, Claude-1 and the 13B models, read from the PDF text
+(results/tables/legalbench_paper_scores.csv, percent as printed; rows whose names the PDF wraps are missing).
+Script analysis/compare_legalbench_paper.py, rows results/tables/legalbench_paper_compare.csv. 147 of our 153
+tasks are in both, 143 with every column. Balanced accuracy, mean over the 143:
+
+| | two labels (123) | 3 to 8 labels (20) | all (143) |
+|---|---|---|---|
+| GPT-4 (paper) | 0.849 | 0.510 | 0.802 |
+| GPT-3.5 (paper) | 0.780 | 0.455 | 0.735 |
+| Claude-1 (paper) | 0.760 | 0.337 | 0.701 |
+| Flan-T5-XXL, 11B (paper) | 0.738 | 0.257 | 0.671 |
+| LLaMA-2-13B (paper) | 0.564 | 0.296 | 0.527 |
+| Qwen as shipped | 0.564 | 0.284 | 0.525 |
+| Qwen edited, 15 labels | 0.745 | 0.370 | 0.692 |
+| Qwen edited, half the sample | 0.829 | 0.513 | 0.785 |
+| Phi-4-mini as shipped | 0.690 | 0.407 | 0.650 |
+| Phi-4-mini edited, 15 labels | 0.776 | 0.438 | 0.729 |
+| Phi-4-mini edited, half the sample | 0.855 | 0.563 | 0.814 |
+| word counts, 15 labels | 0.654 | 0.329 | 0.609 |
+
+Reading: with 15 labels, edited Qwen (0.8B) is level with Flan-T5-XXL and between Claude-1 and LLaMA-2-13B;
+edited Phi-4-mini is between GPT-3.5 and Claude-1. With half the sample (up to 250 labels), edited Qwen is near
+GPT-4 (0.785 against 0.802; at or above GPT-4 on 63 of 143 tasks) and edited Phi is above it (0.814; 69 of 143).
+Not like for like: the paper's models answer by few-shot generation from 0 to 8 worked examples, with no
+labelled fit; ours are fitted on 15 or up to 250 labelled items of the task; item sets differ. Extraction, paper
+against our read-out (best size): definition_extraction GPT-4 0.818, ours 0.768; ssla_plaintiff GPT-4 0.920,
+ours 0.746; ssla_company_defendants GPT-4 0.650, ours 0.118; ssla_individual_defendants GPT-4 0.296, ours 0.221.
