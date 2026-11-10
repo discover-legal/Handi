@@ -30,6 +30,21 @@ n_total, truncated (prompts cut to the last 1024 tokens), multi_token_label, and
 labels n_labels and space_token (1 when the labels are bare digits, which this tokenizer writes as a space token
 followed by the digit: the prompt then ends with that space and the digit tokens are the label rows).
 Resumable: a task with a done_{task} row in the output file is skipped.
+
+Options (owner, 2026-11-10: more labelled examples for the many-label tasks; do not cut long prompts):
+  --sizes N ...  the few-label protocol at each N (default 15): metric few{N}_{task}, same 20 draws rule, seed
+                 300 for 15 and 300 + N otherwise; a size is skipped when fewer than 30 items would be left to
+                 score. few15 is unchanged by this option.
+  --max-len N    prompts longer than N tokens keep their last N (default 1024, as in every earlier run); 0 = the
+                 whole prompt is read. Recorded in the info_{task} row max_len.
+  --cache DIR    saves the collected states and label scores per task (npz), so later analyses need no model.
+  --hf MODEL_ID  another trained model (owner, 2026-11-10: try another model, a Nemotron or a Phi) loaded from
+                 Hugging Face in bfloat16 instead of the registry's Qwen. Same prompts, same formula. Its layers
+                 run on the GPU; its token table (input embedding and output table) stays on the CPU, because a
+                 4B-class model does not fit an 8 GB card whole. Label scores are the output table times the
+                 final state, computed on the CPU in float32.
+  --no-fresh     skips the never-seen items of the large tasks (and so their fresh rows): the few-label draws
+                 then come from the 500-item sample only.
 """
 from __future__ import annotations
 
@@ -59,7 +74,7 @@ GAPS = {  # not run: the row edit needs a fixed set of labels with distinct firs
     "ssla_plaintiff": "open answer (names)", "successor_liability": "answers are sets of several labels",
     "unfair_tos": "two of nine labels (Unilateral change / Unilateral termination) share their first token",
 }
-MAX_LEN = 1024
+MIN_SCORED = 30
 CHUNK = 50
 FEW = 15
 REPEATS = 20
@@ -83,14 +98,48 @@ def ridge_any(X, y, lam):
     return w, float(y.mean() - mu @ w)
 
 
-def states(model, tok, template, rows, ft):
+def load_hf(model_id):
+    """(model, tok, U): layers on the GPU, token table on the CPU, U = output table in float32 on the CPU."""
+    import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+    tok = AutoTokenizer.from_pretrained(model_id)
+    model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16).eval()
+    if getattr(model.lm_head, "bias", None) is not None:
+        raise RuntimeError("the output table has a bias; the row edit as written does not cover it")
+    body = model.model; emb = body.get_input_embeddings()
+    for _, child in body.named_children():
+        if child is not emb:
+            child.to("cuda")
+    return model, tok, model.lm_head.weight.detach().float()
+
+
+def make_collect_hf(U):
+    import torch
+
+    @torch.no_grad()
+    def collect_hf(model, tok, prompts, max_len=1024):
+        body = model.model; emb = body.get_input_embeddings()
+        H, LOG = [], []
+        for p in prompts:
+            ids = tok(p, add_special_tokens=False)["input_ids"][-max_len:]
+            x = emb(torch.tensor([ids])).to("cuda")
+            h = body(inputs_embeds=x).last_hidden_state[0, -1].float().cpu()    # the state lm_head reads
+            H.append(h); LOG.append(U @ h)
+        return torch.stack(H).numpy().astype(np.float64), torch.stack(LOG).numpy().astype(np.float64), None
+    return collect_hf
+
+
+COLLECT = collect
+
+
+def states(model, tok, template, rows, ft, max_len):
     """H [n, d]; logit table [one column per label, log-sum-exp of every other token]; number of truncated prompts."""
     prompts = [EV.fill_prompt(template, r) for r in rows]
     Hs, Ls, cut = [], [], 0
     for i in range(0, len(prompts), CHUNK):
         ch = prompts[i:i + CHUNK]
-        cut += sum(len(tok(p, add_special_tokens=False)["input_ids"]) > MAX_LEN for p in ch)
-        H, LOG, _ = collect(model, tok, ch, max_len=MAX_LEN)
+        cut += sum(len(tok(p, add_special_tokens=False)["input_ids"]) > max_len for p in ch)
+        H, LOG, _ = COLLECT(model, tok, ch, max_len=max_len)
         lse = np.logaddexp.reduce(LOG, axis=1); lab = LOG[:, ft]
         rest = lse + np.log(np.clip(1.0 - np.exp(lab - lse[:, None]).sum(1), 1e-300, None))
         Hs.append(H); Ls.append(np.column_stack([lab, rest]))
@@ -109,7 +158,7 @@ def fit_edit_k(H, L, gold, K, lam=None):
     cal = L[:, :K] + proj[:, None] * shift[None, :]
     W, B = np.zeros((K, d)), np.zeros(K)
     for k in range(K):
-        W[k], B[k] = ridge(H, 2.0 * (gold == k) - 1.0, lam=float(n) if lam is None else lam)
+        W[k], B[k] = ridge_any(H, 2.0 * (gold == k) - 1.0, lam=float(n) if lam is None else lam)
     R = H @ W.T + B
     pairs = [(j, k) for j in range(K) for k in range(j + 1, K)]
     s_cal = np.sqrt(np.mean([(cal[:, k] - cal[:, j]).std() ** 2 for j, k in pairs]))
@@ -176,12 +225,26 @@ def main() -> None:
     ap.add_argument("--model", default="qwen3.5-0.8b")
     ap.add_argument("--tasks", nargs="*", default=sorted(p.stem for p in PROMPTS.glob("*.txt")))
     ap.add_argument("--out", default=str(ROOT / "results/tables/rung3_all.csv"))
+    ap.add_argument("--sizes", nargs="*", type=int, default=[FEW])
+    ap.add_argument("--max-len", type=int, default=1024)
+    ap.add_argument("--cache", default=None)
+    ap.add_argument("--hf", default=None)
+    ap.add_argument("--no-fresh", action="store_true")
     a = ap.parse_args()
+    max_len = a.max_len if a.max_len > 0 else 10 ** 9
+    if a.cache:
+        Path(a.cache).mkdir(parents=True, exist_ok=True)
     skip = done_tasks(Path(a.out))
-    model, tok = EV.load_trained(a.model)
+    global COLLECT
+    if a.hf:
+        model, tok, U = load_hf(a.hf); COLLECT = make_collect_hf(U)
+    else:
+        model, tok = EV.load_trained(a.model)
     t_start = time.time()
     with ResultsWriter(a.out) as w:
         base = dict(hypothesis="R3A", model=a.model, family="qwen3_5", src_dtype="BF16", seed=0, layer="ALL")
+        if a.hf:
+            base.update(model=a.hf, family=model.config.model_type)
         for k, task in enumerate(a.tasks):
             if task in skip:
                 continue
@@ -201,13 +264,13 @@ def main() -> None:
                 if len(set(ft)) != K:
                     print(f"[{task}] labels share their first token, not run", flush=True); continue
                 seen = {tuple(sorted(r.items())) for r in rows}
-                fresh = [r for r in all_rows if tuple(sorted(r.items())) not in seen]
+                fresh = [] if a.no_fresh else [r for r in all_rows if tuple(sorted(r.items())) not in seen]
                 if len(fresh) > 500:
                     rng = np.random.default_rng(1)
                     fresh = [fresh[i] for i in sorted(rng.choice(len(fresh), 500, replace=False))]
                 text = lambda r: " ".join(str(r.get(f, "")) for f in fields)
                 gold = np.array([labels.index(r["answer"]) for r in rows]); n = len(gold)
-                H, L, cut = states(model, tok, template, rows, ft)
+                H, L, cut = states(model, tok, template, rows, ft, max_len)
                 tx = [text(r) for r in rows]
                 out = []
 
@@ -231,7 +294,7 @@ def main() -> None:
                 # never-seen items
                 if fresh:
                     gf = np.array([labels.index(r["answer"]) for r in fresh])
-                    Hf, Lf, cutf = states(model, tok, template, fresh, ft); cut += cutf
+                    Hf, Lf, cutf = states(model, tok, template, fresh, ft, max_len); cut += cutf
                     Pf = model_preds(H, L, gold, Hf, Lf, K)
                     Pf["wordcount"], _ = word_preds(tx, gold, [text(r) for r in fresh], K)
                     sf = {v: put("fresh", v, p, gf) for v, p in Pf.items()}
@@ -242,26 +305,35 @@ def main() -> None:
                 if fresh:
                     Hp, Lp, gp = np.concatenate([H, Hf]), np.concatenate([L, Lf]), np.concatenate([gold, gf])
                     tp = tx + [text(r) for r in fresh]
-                majp = majority(gp); ns = len(gp) - FEW
-                rng = np.random.default_rng(300)
-                R = {v: [] for v in ("calibrated", "edited", "wordcount")}; RB = {v: [] for v in R}
-                for _ in range(REPEATS):
-                    m = np.zeros(len(gp), bool); m[rng.choice(len(gp), FEW, replace=False)] = True
-                    Pd = model_preds(Hp[m], Lp[m], gp[m], Hp[~m], Lp[~m], K)
-                    Pd["wordcount"], _ = word_preds([t for t, q in zip(tp, m) if q], gp[m], [t for t, q in zip(tp, m) if not q], K)
+                majp = majority(gp)
+                if a.cache:
+                    np.savez(Path(a.cache) / f"{task}.npz", H=Hp, L=Lp, gold=gp, n_sample=n, labels=np.array(labels), texts=np.array(tp))
+                p_ship = Lp[:, :K].argmax(1); few_line = ""
+                for size in a.sizes:
+                    ns = len(gp) - size
+                    if size != FEW and ns < MIN_SCORED:
+                        continue
+                    rng = np.random.default_rng(300 if size == FEW else 300 + size)
+                    R = {v: [] for v in ("calibrated", "edited", "wordcount")}; RB = {v: [] for v in R}
+                    for _ in range(REPEATS):
+                        m = np.zeros(len(gp), bool); m[rng.choice(len(gp), size, replace=False)] = True
+                        Pd = model_preds(Hp[m], Lp[m], gp[m], Hp[~m], Lp[~m], K)
+                        Pd["wordcount"], _ = word_preds([t for t, q in zip(tp, m) if q], gp[m], [t for t, q in zip(tp, m) if not q], K)
+                        for v in R:
+                            R[v].append(acc(Pd[v], gp[~m])); RB[v].append(bal(Pd[v], gp[~m]))
+                    w.row(metric=f"few{size}_{task}", component="shipped", value=acc(p_ship, gp), ks=majp, null_n=len(gp), **base)
+                    w.row(metric=f"few{size}_bal_{task}", component="shipped", value=bal(p_ship, gp), ks=1.0 / K, null_n=len(gp), **base)
                     for v in R:
-                        R[v].append(acc(Pd[v], gp[~m])); RB[v].append(bal(Pd[v], gp[~m]))
-                p_ship = Lp[:, :K].argmax(1)
-                w.row(metric=f"few15_{task}", component="shipped", value=acc(p_ship, gp), ks=majp, null_n=len(gp), **base)
-                w.row(metric=f"few15_bal_{task}", component="shipped", value=bal(p_ship, gp), ks=1.0 / K, null_n=len(gp), **base)
-                for v in R:
-                    w.row(metric=f"few15_{task}", component=v, value=float(np.mean(R[v])), null_kind="minmax", null_mean=float(np.min(R[v])),
-                          null_sd=float(np.max(R[v])), ks=majp, null_n=ns, **base)
-                    w.row(metric=f"few15_bal_{task}", component=v, value=float(np.mean(RB[v])), null_kind="minmax", null_mean=float(np.min(RB[v])),
-                          null_sd=float(np.max(RB[v])), ks=1.0 / K, null_n=ns, **base)
-                line = (f"few15 scored={ns} maj={majp:.3f} shipped={acc(p_ship, gp):.3f} cal={np.mean(R['calibrated']):.3f} "
-                        f"edited={np.mean(R['edited']):.3f} [{np.min(R['edited']):.3f}..{np.max(R['edited']):.3f}] words={np.mean(R['wordcount']):.3f} || " + line)
-                info = [("n_total", len(all_rows)), ("truncated", cut), ("multi_token_label", int(any(len(t) > 1 for t in toks)))]
+                        w.row(metric=f"few{size}_{task}", component=v, value=float(np.mean(R[v])), null_kind="minmax", null_mean=float(np.min(R[v])),
+                              null_sd=float(np.max(R[v])), ks=majp, null_n=ns, **base)
+                        w.row(metric=f"few{size}_bal_{task}", component=v, value=float(np.mean(RB[v])), null_kind="minmax", null_mean=float(np.min(RB[v])),
+                              null_sd=float(np.max(RB[v])), ks=1.0 / K, null_n=ns, **base)
+                    few_line += (f"few{size} scored={ns} maj={majp:.3f} shipped={acc(p_ship, gp):.3f} cal={np.mean(R['calibrated']):.3f} "
+                                 f"edited={np.mean(R['edited']):.3f} [{np.min(R['edited']):.3f}..{np.max(R['edited']):.3f}] words={np.mean(R['wordcount']):.3f} "
+                                 f"bal: shipped={bal(p_ship, gp):.3f} edited={np.mean(RB['edited']):.3f} words={np.mean(RB['wordcount']):.3f} || ")
+                line = few_line + line
+                info = [("n_total", len(all_rows)), ("truncated", cut), ("multi_token_label", int(any(len(t) > 1 for t in toks))),
+                        ("max_len", a.max_len)]
                 if K > 2:
                     info += [("n_labels", K), ("space_token", space_token)]; line = f"K={K} " + line
                 for name, val in info:

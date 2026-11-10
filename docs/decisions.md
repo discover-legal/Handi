@@ -438,3 +438,39 @@ over up to 8 labels many labels have one fit item or none, so the 15-label score
 low. Raw = the shipped model with its answer restricted to the label tokens, as in every earlier run; one edit
 per task. Same limits as the entry above (prompts cut to their last 1,024 tokens; random, not label-balanced,
 draws of the 15). The 21 new base_prompt.txt copies are uncommitted with the other 122.
+
+### Rung 3 on the many-label tasks with more labelled examples (2026-11-10)
+
+Decided by the owner: run the many-label tasks with more labelled examples. Run: the 21 tasks with 3 to 8
+labels, the same formula, fitted on 15, 30, 60 and 120 labelled examples (rows R3A in
+results/tables/rung3_all_sizes.csv, written by analysis/run_rung3_all.py --sizes 15 30 60 120). Builder
+defaults, flagged: the sizes 30, 60 and 120; each size is 20 random draws, not label-balanced, scored on every
+other collected item; a size is skipped when fewer than 30 items would be left to score, so 60 runs on 19 tasks
+and 120 on 11. Prompts cut to their last 1,024 tokens as before, so only the number of examples changes; the
+15-example and two-fold rows reproduce rung3_all.csv exactly. The file also holds one two-label MAUD task that
+the task pattern picked up; it is left out of the numbers below.
+
+Balanced accuracy, mean over tasks (chance 0.228 over the 21):
+
+| labelled examples | tasks | raw | edited | word counts | edited above raw | edited above word counts |
+|---|---|---|---|---|---|---|
+| 15 | 21 | 0.281 | 0.365 | 0.329 | 17 | 11 |
+| 30 | 21 | 0.281 | 0.420 | 0.386 | 18 | 10 |
+| 60 | 19 | 0.286 | 0.470 | 0.443 | 18 | 11 |
+| 120 | 11 | 0.309 | 0.617 | 0.584 | 11 | 8 |
+| half the sample (two-fold) | 21 | 0.281 | 0.507 | 0.478 | 20 | 11 |
+
+The same 11 tasks at every size: edited 0.414, 0.472, 0.526, 0.617 at 15, 30, 60, 120 (word counts 0.345,
+0.397, 0.469, 0.584). Plain accuracy over the 21: raw 0.394; edited 0.551, 0.592, 0.626 (19 tasks), 0.718 (11
+tasks); word counts 0.528, 0.577, 0.610, 0.697.
+
+Reading: more examples help steadily, 5 to 9 points of balanced accuracy per doubling, and the many-label
+scores at 15 examples were low because 15 examples over up to 8 labels leave some labels with one example or
+none. The split of the earlier entry holds at every size. The six tasks that are not MAUD: edited 0.389, 0.424,
+0.436, 0.498 (4 tasks) against word counts 0.268, 0.279, 0.287, 0.368; the edited model is above word counts on
+all six. The 15 MAUD tasks: edited 0.356, 0.419, 0.486, 0.685 (7 tasks) against word counts 0.353, 0.429, 0.514,
+0.707; no better than word counts at any size. insurance_policy_interpretation gets worse with more examples
+(0.334, 0.318, 0.296; raw 0.360) and scalr stays at raw (0.351 to 0.400; raw 0.379): what the model's state
+does not hold, more examples do not add. Implementation change, no change of result: fit_edit_k now solves each
+ridge in the n x n form when there are fewer examples than state dimensions (the same solution; row edits agree
+to 3e-14 relative and 0 of 6,885 predictions differ on saved states).
