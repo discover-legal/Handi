@@ -90,19 +90,23 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
   <li><b>Trained models have real, measurable structure in their weights</b>, and we confirmed fourteen separate kinds of it. But that structure is about the sizes and shapes of the numbers, not about which word each number belongs to.</li>
   <li><b>Weights written from that structure alone make a model that is worse than random.</b> Not slightly worse: much worse, in every model we tried.</li>
   <li><b>Nothing we wrote by hand comes close to a real trained model at predicting text.</b></li>
-  <li><b>On law tasks, a calculated edit to a trained model does beat the model as shipped.</b> Qwen3.5-0.8B scores 0.57 on ten LegalBench tasks as shipped and 0.78 after we rewrote two rows of its output table using a formula, no training. The knowledge was already inside the model; it was just not being read out. Two tasks could not be improved because the model does not know them anywhere. On examples the edit never saw it scores 0.94 to 1.00 on three tasks, and it keeps 0.997 on governing-law clauses after the phrase "governed by the laws of" is deleted from every one, so it is reading what the clause does, not the stock wording.</li>
+  <li><b>On law tasks, a calculated edit to a trained model does beat the model as shipped.</b> Qwen3.5-0.8B scores 0.57 on ten LegalBench tasks as shipped and 0.78 after we rewrote two rows of its output table using a formula, no training. Two tasks could not be improved because the model does not know them anywhere. On examples the edit never saw it scores 0.94 to 1.00 on three tasks.</li>
+  <li><b>But plain word counts get much of the way.</b> A control run afterwards feeds the same formula a count of the words in each item instead of the model's internal state. With a few hundred labelled examples it scores 0.86 to 0.997 on those same three tasks, and governing-law clauses are solved by the words alone. The model's own state is worth most when labelled examples are few.</li>
+  <li><b>Across all of LegalBench the edit holds up with just 15 labelled examples per task.</b> On the 132 tasks with two possible answers it lifts Qwen from 0.56 to 0.73 (balanced accuracy, where guessing scores 0.50), against 0.65 for word counts, and beats word counts on 105 of them. It does best on contract clauses and worst on long merger agreements.</li>
+  <li><b>It carries over to a second model.</b> Phi-4-mini, with 3.8 billion weights, starts stronger at 0.68 on the same tasks, and the edit takes it to 0.76.</li>
+  <li><b>When the answer is words copied from the text, it works on one task of four.</b> A per-word version of the read-out finds the term being defined in a sentence better than the model does itself (0.73 to 0.77 against 0.67), but not the parties to securities lawsuits.</li>
   <li><b>There is a "hearsay" pattern inside Qwen, but it is a detector, not a switch.</b> Pushing on it changes the model's answers without making them more correct.</li>
 </ul>
 
 <h2>1. What we were trying to do</h2>
 <p>A language model is a large pile of numbers called <dfn>weights</dfn>. Qwen3.5-0.8B has about 800 million of them. Normally the weights are set by <dfn>training</dfn>: the model reads billions of words, and after every mistake every weight is nudged slightly in the direction that would have made the mistake smaller. Nobody chooses the numbers. They emerge.</p>
-<p>We asked two questions.</p>
+<p>We asked three questions.</p>
 <ol class="steps">
   <li>Trained weights are not random. Can you measure the regularities in them precisely enough to <em>write</em> a fresh set of weights from the regularities, and would that model do anything?</li>
   <li>If not, what <em>can</em> be written by hand, and how far does it get you?</li>
   <li>Take a real trained model that scores badly on law tasks. Is the legal knowledge missing, or present but badly expressed? If it is present, can a calculated edit, with no training, bring it out?</li>
 </ol>
-<p>Eight trained models were studied: GPT-2 small, two Pythia models (70 million and 160 million weights), Qwen3.5-0.8B, and four small TinyStories models. Every experiment was pre-registered: the hypotheses and pass rules were written down before the measurements were run, and everything added afterwards is marked as such.</p>
+<p>Eight trained models were studied: GPT-2 small, two Pythia models (70 million and 160 million weights), Qwen3.5-0.8B, and four small TinyStories models. A ninth, Phi-4-mini, was added later for the law work. Every experiment was pre-registered: the hypotheses and pass rules were written down before the measurements were run, and everything added afterwards is marked as such.</p>
 
 <h2>2. How a language model is scored</h2>
 <p>You need two scores to read this page.</p>
@@ -119,7 +123,7 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
 </tbody></table></div>
 <p>The test text throughout is WikiText-103, a corpus of Wikipedia articles. The 7.5, 6.1 and 6.0 lines come from simple counting models fitted to the same training text, and they are the yardsticks. One nat of improvement means the number of guesses has been cut by a factor of 2.7.</p>
 <h3>Law tasks: accuracy against the majority answer</h3>
-<p>LegalBench is a public collection of legal classification tasks. We used ten with Yes/No style answers: hearsay (is this statement hearsay?), overruling (does this sentence overrule a prior case?), governing-law clauses in contracts, diversity jurisdiction, and so on. The score is <dfn>accuracy</dfn>: the fraction of items answered correctly. The number to beat is the <dfn>majority rate</dfn>: the score you would get by always giving the commoner answer. On hearsay the majority rate is 0.56, so a model scoring 0.47 is doing worse than someone who answers No to everything.</p>
+<p>LegalBench is a public collection of legal tasks. We started with ten with Yes/No style answers, and later ran all of them (section 5): hearsay (is this statement hearsay?), overruling (does this sentence overrule a prior case?), governing-law clauses in contracts, diversity jurisdiction, and so on. The score is <dfn>accuracy</dfn>: the fraction of items answered correctly. The number to beat is the <dfn>majority rate</dfn>: the score you would get by always giving the commoner answer. On hearsay the majority rate is 0.56, so a model scoring 0.47 is doing worse than someone who answers No to everything.</p>
 
 <h2>3. Can you build a model from the structure in trained weights?</h2>
 <div class="answer"><p><b>No.</b> Every model built from the measured structure alone scores far worse than a model filled with random numbers. The structure is real; it just does not say which word goes where.</p></div>
@@ -191,10 +195,95 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
 <tr><td>Definition classification, the last 337</td><td class="num">337</td><td class="num">0.54</td><td class="num">0.56</td><td class="num">0.98</td></tr>
 <tr><td>Governing law (CUAD)</td><td class="num">376</td><td class="num">0.52</td><td class="num">0.62</td><td class="num">1.00</td></tr>
 </tbody></table></div>
-<p>Those are the same numbers the half-and-half test gave, within a point or two, so nothing was being memorised. One caution and one test on the two near-perfect tasks. The caution: both look lexically easy, since a governing-law clause usually says "governed by the laws of" and a defining sentence says "means" or "is defined as", so a classifier that merely spots the phrase would score well. The test: we deleted those phrases from the never-seen items (so "construed in accordance with the laws of the State of California" became "[...] the State of California"), and separately paraphrased them into plain words ("read under the rules of"). The edited model still scored 0.997 on governing law and 0.97 on definitions either way, while the model as shipped fell to coin-flip level. So the edit reads the content of the clause, a named jurisdiction attached to the agreement, a term being given a meaning, not the stock wording. What remains surprising is that the model as shipped could not say what it had already worked out. And LegalBench holds no more examples of either: the 876 governing-law clauses are the whole task (they come from the CUAD contract dataset), and the 1,337 definition sentences are the whole task. Every one of them has now been scored by an edit that did not see it.</p>
+<p>Those are the same numbers the half-and-half test gave, within a point or two, so nothing was being memorised. One caution and one test on the two near-perfect tasks. The caution: both look lexically easy, since a governing-law clause usually says "governed by the laws of" and a defining sentence says "means" or "is defined as", so a classifier that merely spots the phrase would score well. The test: we deleted those phrases from the never-seen items (so "construed in accordance with the laws of the State of California" became "[...] the State of California"), and separately paraphrased them into plain words ("read under the rules of"). The edited model still scored 0.997 on governing law and 0.97 on definitions either way, while the model as shipped fell to coin-flip level. So the edit is not just spotting the stock phrase. That is not the same as showing the model understands the clause, as the control below shows. And LegalBench holds no more examples of either: the 876 governing-law clauses are the whole task (they come from the CUAD contract dataset), and the 1,337 definition sentences are the whole task. Every one of them has now been scored by an edit that did not see it.</p>
 <p>The edit is also strictly one task at a time. It rewrites the " Yes" and " No" rows, which every Yes/No prompt reads, so one task's edit changes between 2% and 97% of another task's answers, and summing all ten edits into one table leaves only three tasks working. A model edited for several tasks would need its own label pair per task, or an edit deeper than the output table.</p>
 
-<h2>5. Is there a "hearsay" switch inside the model?</h2>
+<h3>A control: how far do plain word counts get?</h3>
+<p>The edit learns from labelled examples, so the fair question is how much of the score comes from that learning rather than from the model. We kept the formula exactly as it is and fed it, instead of the model's 1,024-number fingerprint, a count of each word in the item (words that appear in at least two of the labelled examples). We also ran it on a model with random, untrained weights, and with the labels shuffled. Every number is accuracy on the never-seen examples, with the edit fitted on 500 labelled ones.</p>
+<div class="tablewrap"><table>
+<thead><tr><th></th><th class="num">Overruling</th><th class="num">Definition classification</th><th class="num">Governing law</th></tr></thead>
+<tbody>
+<tr><td>Majority rate</td><td class="num">0.51</td><td class="num">0.52</td><td class="num">0.52</td></tr>
+<tr><td>As shipped</td><td class="num">0.67</td><td class="num">0.59</td><td class="num">0.62</td></tr>
+<tr><td>After the edit</td><td class="num">0.94</td><td class="num">0.98</td><td class="num">1.00</td></tr>
+<tr><td>Same formula on word counts</td><td class="num">0.91</td><td class="num">0.86</td><td class="num">0.997</td></tr>
+<tr><td>Same edit on an untrained model (mean of two)</td><td class="num">0.84</td><td class="num">0.88</td><td class="num">0.96</td></tr>
+<tr><td>Same edit with the labels shuffled (mean of 20)</td><td class="num">0.57</td><td class="num">0.58</td><td class="num">0.58</td></tr>
+</tbody></table></div>
+<p>Three things follow. Shuffled labels give almost nothing, so the score is not an artefact of fitting 500 examples. The trained model is worth something over the words: 3 points on overruling, 12 on definitions. And governing law is solved by word counts (0.997), so its perfect score says nothing about what the model knows, and our earlier reading that the edit "reads what the clause does" is withdrawn for that task. Even a model with random weights reaches most of the score, because with a few hundred labels the formula does most of the work itself. If the trained model pays off, it should be when labels are few. That is what the next section tests.</p>
+
+<h2>5. Does it work across all of LegalBench?</h2>
+<div class="answer"><p><b>Yes, with only 15 labelled examples per task.</b> On the 132 LegalBench tasks with two possible answers, the edit takes Qwen from 0.56 to 0.73, ahead of word counts at 0.65. It also works with more than two answers, with whole prompts, and on a second model. When the answer is words copied from the text, it works on one task of four.</p></div>
+<p>LegalBench has 162 tasks, and 153 of them have a fixed set of answers. We ran all 153. To make the test harder and closer to real use, each edit was fitted on just 15 labelled examples drawn at random and scored on every other item in the task. This was repeated with 20 different draws and averaged. The word-count control runs beside it, fitted on the same 15 examples.</p>
+<p>Many LegalBench tasks are lopsided: in some, nine items in ten have the same answer, and plain accuracy rewards always giving that answer. So from here on we use <dfn>balanced accuracy</dfn>: the share answered correctly is worked out separately for each possible answer, then averaged. Guessing, or always giving the same answer, scores 0.50 on a two-answer task.</p>
+
+<figure id="fig-groups">
+  <div class="title">All 132 two-answer LegalBench tasks, 15 labelled examples each</div>
+  <div class="subtitle">Balanced accuracy, mean over the tasks in each group. Guessing scores 0.50.</div>
+  <div class="legend"><span><i style="background:var(--s1)"></i>Qwen as shipped</span><span><i style="background:var(--s7)"></i>word counts, same formula</span><span><i style="background:var(--s2)"></i>Qwen after the edit</span><span><i style="background:var(--s3)"></i>Phi-4-mini after the edit</span></div>
+  <div class="chartwrap" data-chart="groups"></div>
+  <figcaption>The edit (orange) is ahead of the model as shipped (blue) in every group and ahead of word counts (purple) in six of eight. It does best on contract clauses (CUAD, 38 tasks: 0.88 against 0.75 for word counts) and worst on long documents, MAUD merger agreements and supply-chain disclosures, where word counts do as well or better. Green is the same edit on a second model, Phi-4-mini (below).</figcaption>
+  <details class="data"><summary>Data table</summary><div class="tablewrap" data-table="groups"></div></details>
+</figure>
+
+<p>Across the 132 tasks, the edit beats the model as shipped on 124 and word counts on 105. It reaches 0.90 or more on 22 tasks; word counts do that on one. Given more labels, word counts close part of the gap: when the edit is fitted on half of each task's items (up to 250 labels), it scores 0.82 against 0.77 for word counts. The model's own state is worth 8 points with 15 labels and 5 with a few hundred, which is what you would hope for: it matters most when labels are scarce.</p>
+
+<h3>More than two answers</h3>
+<p>21 tasks have three to eight possible answers: for example the five classes of trademark distinctiveness in <em>abercrombie</em>, or which way a Canadian tax appeal went. The formula extends without change of idea: one read-out per answer, each written into that answer's row. With 15 examples spread over up to eight answers, some answers get one example or none, so we also tried 30, 60 and 120.</p>
+
+<figure id="fig-sizes">
+  <div class="title">Many-answer tasks: more labelled examples</div>
+  <div class="subtitle">Balanced accuracy, mean over the 11 tasks with enough items for 120 examples. Guessing scores 0.23.</div>
+  <div class="legend"><span><i class="line" style="background:var(--s2)"></i>Qwen after the edit</span><span><i class="line" style="background:var(--s7)"></i>word counts, same formula</span><span><i class="ref"></i>Qwen as shipped 0.31</span></div>
+  <div class="chartwrap" data-chart="sizes"></div>
+  <figcaption>Each doubling of the labelled examples adds 5 to 9 points. The edit stays ahead of word counts, by less as the examples grow. Over all 21 tasks the split is sharp: on the six tasks that are not MAUD, the edit beats word counts at every size (0.39 against 0.27 at 15 examples); on the 15 MAUD tasks it is no better than word counts at any size. Two tasks never improve: insurance_policy_interpretation, which gets worse with more examples, and scalr, which stays at the model's own level.</figcaption>
+  <details class="data"><summary>Data table</summary><div class="tablewrap" data-table="sizes"></div></details>
+</figure>
+
+<h3>Reading the whole prompt</h3>
+<p>Every run up to this point cut prompts longer than 1,024 tokens to their last 1,024. On 90 tasks that sometimes left the model reading the item without the instruction or the worked examples at the top of the prompt. We reran those tasks with the whole prompt. With 15 examples, the edit rises from 0.64 to 0.67 on average, better on 76 tasks and worse on 12. Word counts stay at 0.59, because they always read the whole item. The edit now beats word counts on 69 of the 89 tasks instead of 59. The biggest gain is on Learned Hands, people describing legal problems in their own words: 0.69 to 0.79 over 15 tasks. One task, learned_hands_housing, has a 6,593-token prompt that does not fit whole on our 8 GB graphics card, so it was not rerun.</p>
+
+<h3>A second model</h3>
+<p>To see whether this is something about Qwen, we ran the same prompts and the same formula on Phi-4-mini-instruct, a 3.8-billion-weight model from Microsoft with an MIT licence. Phi reads prompts up to 4,096 tokens on our card (17 tasks had longer ones, cut to their last 4,096).</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Tasks, 15 labelled examples</th><th class="num">Qwen as shipped</th><th class="num">Qwen edited</th><th class="num">Phi as shipped</th><th class="num">Phi edited</th><th class="num">Word counts</th></tr></thead>
+<tbody>
+<tr><td>132 two-answer tasks</td><td class="num">0.56</td><td class="num">0.73</td><td class="num">0.68</td><td class="num">0.76</td><td class="num">0.65</td></tr>
+<tr><td>21 many-answer tasks</td><td class="num">0.28</td><td class="num">0.37</td><td class="num">0.40</td><td class="num">0.43</td><td class="num">0.33</td></tr>
+</tbody></table></div>
+<p>Phi is better than Qwen before any edit, ahead on 108 of the 132 two-answer tasks, and the edit still adds to it: edited Phi beats word counts on 120 of 132 tasks, against 105 for edited Qwen. Phi gains less from the edit, 8 points against Qwen's 17. Part of the gap between the two models may be prompt length, since Qwen's numbers here come from the run that cut prompts at 1,024 tokens. We also meant to try a small Nemotron model, but the current one needs its own model code and was not tried.</p>
+
+<h3>Answers copied from the text</h3>
+<p>Four LegalBench tasks ask for words from the text rather than a label: the term a sentence defines (<em>definition_extraction</em>), and the plaintiffs, company defendants and individual defendants named in securities class-action complaints (the three <em>ssla</em> tasks). The output-row edit cannot do these, because there is no fixed answer row to rewrite. But the same calculation can be pointed at each word of the text instead: from the model's internal state at that word, is this word part of the answer? Words that score above zero are copied out. This read-out sits beside the model rather than inside it: the model's own written reply is unchanged, and the answer comes from reading the model's state at every word.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Task</th><th class="num">Model's own answer</th><th class="num">Read-out, 15 / 120 examples</th><th class="num">Word counts, 120</th><th class="num">Best possible by copying</th></tr></thead>
+<tbody>
+<tr><td>Term being defined (accuracy)</td><td class="num">0.67</td><td class="num">0.66 / 0.73</td><td class="num">0.41</td><td class="num">0.89</td></tr>
+<tr><td>Company defendants (F1)</td><td class="num">0.34</td><td class="num">0.05 / 0.12</td><td class="num">0.04</td><td class="num">0.11</td></tr>
+<tr><td>Individual defendants (F1)</td><td class="num">0.23</td><td class="num">0.22 / 0.21</td><td class="num">0.11</td><td class="num">0.31</td></tr>
+<tr><td>Plaintiffs (F1)</td><td class="num">0.10</td><td class="num">0.75 / 0.75</td><td class="num">0.75</td><td class="num">0.91</td></tr>
+</tbody></table></div>
+<p>Scores use LegalBench's own scoring code. The read-out works on definitions: from 30 examples it beats the model's own answer, reaching 0.77 when fitted on half the items, far above word counts. The other three do not work, each for a visible reason. Company defendants must be given by their full legal name ("Akorn, Inc."), but the complaint mostly says "Akorn", so copying words from the text can reach only 0.11, while the model, which writes the full name, gets 0.34. On individual defendants the read-out ties the model; the best possible score is only 0.31 because LegalBench's scorer adds a penalty once for every name, which punishes complaints with many defendants. And on plaintiffs, 378 of 500 complaints name none: the read-out's 0.75 is simply answering "Not named" every time, which scores the same. A version weighted to pick out the rare name words picks too many and gets worse with more examples. No version found the named plaintiffs.</p>
+
+<h3>What was not run</h3>
+<ul class="short">
+  <li><b>Three tasks with open answers</b> need knowledge or arithmetic, not reading: rule_qa (free-text answers), citation_prediction_open (naming a case) and sara_numeric (a tax amount in dollars). Nothing here adds knowledge, so there is no equivalent.</li>
+  <li><b>Two tasks with fixed answers</b> do not fit the row edit: successor_liability, whose answers are sets of several labels, and unfair_tos, where two labels start with the same token.</li>
+  <li><b>learned_hands_housing with its whole prompt</b>, which does not fit on the graphics card, and <b>a Nemotron model</b>, which needs its own model code.</li>
+</ul>
+<details class="tech"><summary>Method and numbers</summary>
+  <ul>
+    <li>Prompts: each task's LegalBench base_prompt.txt. Sample: all items, or 500 drawn with seed 0. The 15-example protocol: 15 items drawn at random (not balanced by label) from the collected items, 20 draws, seed 300; the edit and the word-count ridge are fitted on the same 15 and scored on every other collected item; λ = 15. "Half the items": two-fold by item parity.</li>
+    <li>Means over the 132 two-answer tasks, 15 examples, balanced accuracy: as shipped 0.562, calibrated 0.659, edited 0.733, word counts 0.651; plain accuracy 0.590, 0.657, 0.788, 0.711 (majority 0.595). Two-fold: edited 0.816, word counts 0.765.</li>
+    <li>More than two answers: one standardised ridge per answer (to +1 for that answer's items, −1 for the others), U[t_k] += α w_k + (α b_k / p̄) μ̂, α = 2 × spread of the calibrated gap / spread of the read-out, both as root mean square over answer pairs. For two answers this is exactly the two-row edit (rows agree to 3e-16). On the 11 tasks run at every size: edited 0.414, 0.472, 0.526, 0.617 at 15, 30, 60, 120; word counts 0.345, 0.397, 0.469, 0.584; as shipped 0.309.</li>
+    <li>Whole prompts: 89 tasks, 15 examples: edited 0.636 cut, 0.670 whole; as shipped 0.483, 0.503. At 15, 30, 60, 120 examples whole: edited 0.670, 0.703, 0.744 (80 tasks), 0.790 (55 tasks); word counts 0.589, 0.637, 0.687, 0.733.</li>
+    <li>Phi-4-mini-instruct: layers on the GPU, its token table on the CPU, label scores computed in float32; same formula. Two-fold, two-answer tasks: edited 0.842 (Qwen 0.816).</li>
+    <li>Extraction read-out: the final state at the last token of every word of the item's text; a word is +1 inside an occurrence of the answer (matched whole and by comma-separated pieces, ignoring case and punctuation). One standardised ridge, λ = number of fit words, threshold 0; the term task returns the single best-scoring run of words, the ssla tasks every run. Reported both weighted (answer words and other words counting equally) and unweighted; the table shows weighted for the first three tasks and unweighted for plaintiffs. Word baseline: the word, its neighbours and a capital-letter flag.</li>
+    <li>Rows: results/tables/rung3_all.csv, rung3_all_sizes.csv, rung3_all_uncut.csv, rung3_all_phi.csv, rung3_extract.csv; per-task table in docs/legalbench_benchmark.md.</li>
+  </ul>
+</details>
+
+<h2>6. Is there a "hearsay" switch inside the model?</h2>
 <div class="answer"><p><b>There is a hearsay detector, not a switch.</b> One direction in the model's internal state separates hearsay examples from non-hearsay at 0.73 and is specific to hearsay. But pushing the model along that direction never makes its answers more correct. It only changes them.</p></div>
 <p>Since the probe found the answer inside the model, we asked a sharper question: is there a single direction that means "hearsay"? Take the internal state at each layer, average it over the Yes examples and over the No examples, and subtract. That difference is a <dfn>direction</dfn>. Fitted on half the examples, it sorts the other half at 0.73 at the best layers. It is not the same as the model's general Yes/No direction (the two are nearly perpendicular), and the corresponding directions for the other nine tasks do not sort hearsay (0.46 to 0.62).</p>
 
@@ -228,50 +317,55 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
   </ul>
 </details>
 
-<h2>6. What we conclude</h2>
+<h2>7. What we conclude</h2>
 <ul class="short">
   <li><b>The structure in trained weights is real and large</b>, and it reproduces across three architectures and three sizes. It describes the container: how big the signals are and which directions they use.</li>
   <li><b>The container is not the content.</b> The content is the pairing of each direction with a word, and none of the structural measurements see it. Writing the container without the content gives a confidently wrong model.</li>
-  <li><b>Trained models can know more than they say.</b> Qwen's legal knowledge is readable inside it at 0.84 on average and expressed at 0.57. A formula can recover most of that difference, and for the two tasks it cannot recover, the reason is visible: the knowledge is not there.</li>
+  <li><b>Trained models can know more than they say, but less than the first results suggested.</b> Qwen's legal knowledge is readable inside it at 0.84 on average on the first ten tasks and expressed at 0.57, and a formula recovers most of that difference. But the same formula on plain word counts recovers much of it too. The model's own state adds most when labels are few (8 points of balanced accuracy at 15 labels, 5 at a few hundred) and on contract clauses; on long merger agreements it adds nothing.</li>
+  <li><b>It is not one model's quirk.</b> The same formula works across 153 LegalBench tasks, with more than two answers, and on a second, stronger model.</li>
 </ul>
 <h3>What we do not claim</h3>
 <ul class="short">
   <li><b>No new capability was created.</b> Nothing here adds knowledge to a model. The law edit reads out what was already present.</li>
   <li><b>This is not a safety bypass.</b> Every edit here requires full access to the weights, and anyone with that access already has cheaper, well-known ways to change a model's behaviour. A direction that sorts examples is not the direction the model decides with, and pushing on it did not make the model do anything it could not already do.</li>
-  <li><b>The models are small.</b> One million to 800 million weights. Nothing was measured on a frontier model.</li>
-  <li><b>Some of this was decided after seeing results.</b> Six of the nineteen hypotheses, the law edits and the steering work were added after the pre-registered results were in. They are marked as such in every table. No training was used anywhere in the law work.</li>
+  <li><b>The models are small.</b> One million to 3.8 billion weights. Nothing was measured on a frontier model.</li>
+  <li><b>Some of this was decided after seeing results.</b> Six of the nineteen hypotheses, the law edits, the steering work, the controls, the LegalBench-wide runs, the second model and the extraction read-out were added after the pre-registered results were in. They are marked as such in every table. No training was used anywhere in the law work.</li>
 </ul>
 
-<h2>7. How to pull a classifier out of a model yourself</h2>
+<h2>8. How to pull a classifier out of a model yourself</h2>
 <p>The whole of section 4 is about forty lines of Python once the model is loaded. Here is the recipe, written so you can do it to a model of your own. A fuller version with the code is in the repository: <a href="https://github.com/discover-legal/Handi/blob/main/docs/cookbook.md">docs/cookbook.md</a>.</p>
 <ol class="steps">
-  <li><b>Pick a task with two one-token answers</b> (" Yes" / " No" work in most tokenisers; check with the tokeniser) and a prompt template that ends exactly where the answer goes, such as <code>Label:</code>. Gather a few hundred labelled examples.</li>
+  <li><b>Pick a task with two one-token answers</b> (" Yes" / " No" work in most tokenisers; check with the tokeniser) and a prompt template that ends exactly where the answer goes, such as <code>Label:</code>. Gather labelled examples: 15 already help, a few hundred are better. More than two answers works the same way, with one read-out per answer (section 5).</li>
   <li><b>Record the internal state.</b> Run each prompt through the model and keep two things from the last position: the final internal state <code>h</code> (the vector after the final normalisation, 1,024 numbers in Qwen3.5-0.8B) and the full output scores. In Hugging Face this is <code>hidden_states[-1]</code> at the last position and <code>lm_head</code> applied to it.</li>
   <li><b>Split the examples in two halves.</b> Everything that follows is fitted on one half and scored on the other, then swapped. Never report the in-sample number; in-sample every task scored 0.89 to 1.00 and that means nothing.</li>
   <li><b>Check the model knows the answer.</b> Fit a ridge regression from <code>h</code> to the label (+1 / −1) on the fit half, with the regularisation set to the number of examples on standardised features. Score the other half. If it is at the majority rate, stop: the answer is not readable here and no edit of the output can help.</li>
   <li><b>Remove the model's lean.</b> Compute each label's average log-probability on the fit half. Shift each label's output row along the direction of the average state by the amount that makes those averages equal. This alone took the ten-task mean from 0.57 to 0.67.</li>
   <li><b>Write the read-out into the rows.</b> Scale the ridge weights so their spread across examples is twice the spread of the (calibrated) Yes-minus-No score, add them to the Yes row and subtract them from the No row, with the intercept carried along the average-state direction. If the model shares one table for input and output, untie it first or the edit also changes how the words are read in.</li>
   <li><b>Verify on the live model.</b> Put the edited rows into the real weights and re-run your ordinary scorer on the held-out half. It should match the offline arithmetic to a few decimals; ours did.</li>
+  <li><b>Run the word-count control.</b> Fit the same formula on counts of the words in each example instead of <code>h</code>, on the same labels. If it scores as well, the model is adding nothing you could not get from the words.</li>
   <li><b>Know what you have built.</b> One task per label pair: the edit changes the model's Yes/No behaviour for every other prompt that uses those tokens. It adds no knowledge. And the read-out at the final layer is usually a few points below the best middle layer; reaching that would need an edit deeper in the network, which this recipe does not do.</li>
 </ol>
 
-<h2>8. Glossary</h2>
+<h2>9. Glossary</h2>
 <dl class="gloss">
   <dt>Weights</dt><dd>The numbers inside a model. Training sets them; this project wrote them.</dd>
   <dt>Layer</dt><dd>One stage of a transformer. Qwen3.5-0.8B has 24; Pythia-70M has 6. Each layer reads the internal state and adds to it.</dd>
   <dt>Internal state (residual stream)</dt><dd>The list of numbers (512 to 1,024 of them) that a transformer carries for each word position from layer to layer. Everything the model "knows" about the text at that point is in it.</dd>
   <dt>Cross-entropy, nats</dt><dd>The next-word prediction score. e to the power of the score is the equivalent number of equally likely guesses. Lower is better.</dd>
   <dt>Accuracy, majority rate</dt><dd>Fraction of items answered correctly; and the score from always giving the commoner answer.</dd>
+  <dt>Balanced accuracy</dt><dd>Accuracy worked out separately for each possible answer, then averaged. Guessing scores 1 divided by the number of answers, however lopsided the task.</dd>
+  <dt>Word-count control</dt><dd>The same formula fitted on counts of the words in each item instead of the model's internal state. It shows how much of a score the words alone can earn.</dd>
+  <dt>F1</dt><dd>For answers that are lists of names: a score that balances finding every right name against adding wrong ones. 1 is perfect.</dd>
   <dt>Linear probe</dt><dd>A weighted sum of the internal state, fitted to predict a label. The simplest test of whether information is present in a readable form.</dd>
   <dt>Direction</dt><dd>A fixed pattern of numbers in the internal state; here, the average difference between Yes and No examples.</dd>
   <dt>Steering</dt><dd>Adding a multiple of a direction to the internal state while the model runs.</dd>
   <dt>Seed</dt><dd>The random starting point of a run. Repeating with several seeds shows how much a result depends on luck. Every chart here averages three or five.</dd>
 </dl>
 
-<h2>9. How to check any number</h2>
-<p>Every chart is drawn from rows in a results folder, and every row carries the git commit and timestamp of the run that produced it. Every decision, including the ones taken after results were seen, is dated in a decisions file with the defaults used. The code for each experiment is a single script. The repository is public at <a href="https://github.com/discover-legal/Handi">github.com/discover-legal/Handi</a>; start with <code>docs/decisions.md</code>, then <code>results/tables/</code>. The recipe for the output-row edit, with code, is <code>docs/cookbook.md</code>.</p>
+<h2>10. How to check any number</h2>
+<p>Every chart is drawn from rows in a results folder, and every row carries the git commit and timestamp of the run that produced it. Every decision, including the ones taken after results were seen, is dated in a decisions file with the defaults used. The code for each experiment is a single script. The repository is public at <a href="https://github.com/discover-legal/Handi">github.com/discover-legal/Handi</a>; start with <code>docs/decisions.md</code>, then <code>results/tables/</code>. The recipe for the output-row edit, with code, is <code>docs/cookbook.md</code>. The LegalBench-wide results are in <code>results/tables/rung3_all*.csv</code> and <code>rung3_extract.csv</code>, with a per-task table in <code>docs/legalbench_benchmark.md</code>; the prompts are in <code>tests/fixtures/legalbench_prompts/</code>.</p>
 
-<footer>Handi project. Written by the Claude and me, November 2026. Models: GPT-2 small, Pythia-70M, Pythia-160M, Qwen3.5-0.8B, TinyStories 1M/3M/8M/33M. Corpora: WikiText-103, TinyStories, LegalBench (ten classification tasks).</footer>
+<footer>Handi project. Written by the Claude and me, November 2026. Models: GPT-2 small, Pythia-70M, Pythia-160M, Qwen3.5-0.8B, TinyStories 1M/3M/8M/33M, Phi-4-mini-instruct. Corpora: WikiText-103, TinyStories, LegalBench (157 tasks).</footer>
 </div>
 <div class="tip" id="tip"></div>
 
@@ -312,6 +406,19 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
     { t: 'Hearsay', maj: 0.564, E0: 0.468, E2: 0.628, probe: 0.787, L: 17 },
     { t: 'NY judicial ethics', maj: 0.521, E0: 0.579, E2: 0.555, probe: 0.562, L: 19 },
     { t: 'Citation prediction', maj: 0.500, E0: 0.491, E2: 0.324, probe: 0.500, L: 0 },
+  ];
+  const groups = [
+    { g: 'CUAD contract clauses', n: 38, raw: 0.591, ed: 0.878, wc: 0.745, phi: 0.868 },
+    { g: 'Contract NLI', n: 14, raw: 0.598, ed: 0.845, wc: 0.738, phi: 0.845 },
+    { g: 'Privacy policies', n: 9, raw: 0.628, ed: 0.777, wc: 0.647, phi: 0.763 },
+    { g: 'Learned Hands', n: 16, raw: 0.509, ed: 0.696, wc: 0.590, phi: 0.654 },
+    { g: 'Diversity jurisdiction', n: 6, raw: 0.615, ed: 0.691, wc: 0.503, phi: 0.895 },
+    { g: 'MAUD merger agreements', n: 19, raw: 0.523, ed: 0.594, wc: 0.626, phi: 0.629 },
+    { g: 'Supply chain disclosures', n: 10, raw: 0.500, ed: 0.541, wc: 0.546, phi: 0.692 },
+    { g: 'Other tasks', n: 20, raw: 0.550, ed: 0.630, wc: 0.585, phi: 0.716 },
+  ];
+  const sizes = [
+    { k: 15, ed: 0.414, wc: 0.345 }, { k: 30, ed: 0.472, wc: 0.397 }, { k: 60, ed: 0.526, wc: 0.469 }, { k: 120, ed: 0.617, wc: 0.584 },
   ];
   const dirAcc = [0.564,0.681,0.670,0.606,0.606,0.660,0.681,0.670,0.702,0.691,0.670,0.734,0.638,0.691,0.691,0.660,0.713,0.734,0.723,0.713,0.702,0.713,0.713,0.713];
   const ridgeAcc = [0.564,0.670,0.670,0.755,0.755,0.649,0.638,0.649,0.649,0.681,0.638,0.713,0.745,0.723,0.755,0.745,0.755,0.787,0.787,0.787,0.766,0.787,0.766,0.723];
@@ -386,6 +493,25 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
     table(document.querySelector('[data-table=rung3]'), ['task', 'majority', 'as shipped', 'after edit', 'probe ceiling', 'probe layer'], rung3.map(d => [d.t, fmt(d.maj, 3), fmt(d.E0, 3), fmt(d.E2, 3), fmt(d.probe, 3), d.L]));
   })();
 
+  (function () {
+    const W = 720, left = 200, right = 16, rowH = 30, top = 24; const H = top + groups.length * rowH + 44;
+    const s = svg(document.querySelector('[data-chart=groups]'), W, H);
+    const x = scale(0.45, 0.95, left, W - right);
+    const ticks = [0.5, 0.6, 0.7, 0.8, 0.9];
+    grid(s, x, top - 6, top + groups.length * rowH, ticks);
+    groups.forEach((d, i) => {
+      const cy = top + i * rowH + rowH / 2;
+      const lab = el('text', { x: left - 8, y: cy + 4, 'text-anchor': 'end', fill: css('--fg') }, s); lab.textContent = `${d.g} (${d.n})`;
+      el('line', { x1: x(Math.min(d.raw, d.wc, d.ed, d.phi)), x2: x(Math.max(d.raw, d.wc, d.ed, d.phi)), y1: cy, y2: cy, stroke: css('--rule'), 'stroke-width': 1 }, s);
+      dot(s, x(d.raw), cy, css('--s1'), `${d.g} · Qwen as shipped: ${fmt(d.raw, 3)}`);
+      dot(s, x(d.wc), cy, css('--s7'), `${d.g} · word counts: ${fmt(d.wc, 3)}`);
+      dot(s, x(d.phi), cy, css('--s3'), `${d.g} · Phi-4-mini edited: ${fmt(d.phi, 3)}`);
+      dot(s, x(d.ed), cy, css('--s2'), `${d.g} · Qwen edited: ${fmt(d.ed, 3)}`);
+    });
+    axisX(s, x, top + groups.length * rowH + 6, ticks, 'balanced accuracy', t => fmt(t, 1));
+    table(document.querySelector('[data-table=groups]'), ['group', 'tasks', 'Qwen as shipped', 'word counts', 'Qwen edited', 'Phi-4-mini edited'], groups.map(d => [d.g, d.n, fmt(d.raw, 3), fmt(d.wc, 3), fmt(d.ed, 3), fmt(d.phi, 3)]));
+  })();
+
   // ---------- line chart helper ----------
   function lines(parent, series, opts) {
     const W = 720, left = 48, right = 16, top = 16, bottom = 40, H = opts.h || 260;
@@ -396,14 +522,21 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
     series.forEach(sr => {
       const pts = sr.pts.map(p => [x(p[0]), y(p[1])]);
       el('path', { d: 'M' + pts.map(p => p.join(',')).join('L'), fill: 'none', stroke: sr.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', opacity: sr.opacity || 1 }, s);
-      if (sr.dots) sr.pts.forEach(p => { const g = el('g', {}, s); el('circle', { cx: x(p[0]), cy: y(p[1]), r: 7, fill: 'transparent' }, g); el('circle', { cx: x(p[0]), cy: y(p[1]), r: 3.5, fill: sr.color, stroke: css('--surface'), 'stroke-width': 2, opacity: sr.opacity || 1 }, g); hover(g, `${sr.name} · ${opts.xname} ${p[0]}: ${fmt(p[1], opts.d || 2)}`); });
+      if (sr.dots) sr.pts.forEach(p => { const g = el('g', {}, s); el('circle', { cx: x(p[0]), cy: y(p[1]), r: 7, fill: 'transparent' }, g); el('circle', { cx: x(p[0]), cy: y(p[1]), r: 3.5, fill: sr.color, stroke: css('--surface'), 'stroke-width': 2, opacity: sr.opacity || 1 }, g); hover(g, `${sr.name} · ${opts.xname} ${opts.xf ? opts.xf(p[0]) : p[0]}: ${fmt(p[1], opts.d || 2)}`); });
       const last = pts[pts.length - 1]; if (sr.label) { const t = el('text', { x: last[0] + 5, y: last[1] + 4, fill: css('--fg-2') }, s); t.textContent = sr.label; }
     });
     el('line', { x1: left, x2: W - right, y1: H - bottom, y2: H - bottom, stroke: css('--rule') }, s);
-    opts.xt.forEach(t => { const tx = el('text', { x: x(t), y: H - bottom + 16, 'text-anchor': 'middle', fill: css('--fg-3') }, s); tx.textContent = t; });
+    opts.xt.forEach(t => { const tx = el('text', { x: x(t), y: H - bottom + 16, 'text-anchor': 'middle', fill: css('--fg-3') }, s); tx.textContent = opts.xf ? opts.xf(t) : t; });
     const xl = el('text', { x: W - right, y: H - 6, 'text-anchor': 'end', fill: css('--fg-2') }, s); xl.textContent = opts.xlabel;
     return s;
   }
+
+  // ---------- more labelled examples (x = doublings from 15) ----------
+  lines(document.querySelector('[data-chart=sizes]'), [
+    { name: 'Qwen edited', pts: sizes.map((d, i) => [i, d.ed]), color: css('--s2'), dots: true },
+    { name: 'word counts', pts: sizes.map((d, i) => [i, d.wc]), color: css('--s7'), dots: true },
+  ], { x0: -0.15, x1: 3.15, y0: 0.2, y1: 0.7, yt: [0.2, 0.3, 0.4, 0.5, 0.6, 0.7], xt: [0, 1, 2, 3], xf: i => sizes[i] ? sizes[i].k : i, xlabel: 'labelled examples', xname: 'examples', ref: 0.309, refLabel: 'as shipped 0.31', yf: t => fmt(t, 1), d: 3 });
+  table(document.querySelector('[data-table=sizes]'), ['labelled examples', 'Qwen edited', 'word counts', 'Qwen as shipped'], sizes.map(d => [d.k, fmt(d.ed, 3), fmt(d.wc, 3), '0.309']));
 
   // ---------- 4. direction by layer ----------
   lines(document.querySelector('[data-chart=dir]'), [
