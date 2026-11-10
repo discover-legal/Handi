@@ -95,6 +95,8 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
   <li><b>Across all of LegalBench the edit holds up with just 15 labelled examples per task.</b> On the 132 tasks with two possible answers it lifts Qwen from 0.56 to 0.73 (balanced accuracy, where guessing scores 0.50), against 0.65 for word counts, and beats word counts on 105 of them. It does best on contract clauses and worst on long merger agreements.</li>
   <li><b>It carries over to a second model.</b> Phi-4-mini, with 3.8 billion weights, starts stronger at 0.68 on the same tasks, and the edit takes it to 0.76.</li>
   <li><b>When the answer is words copied from the text, it works on one task of four.</b> A per-word version of the read-out finds the term being defined in a sentence better than the model does itself (0.73 to 0.77 against 0.67), but not the parties to securities lawsuits.</li>
+  <li><b>Against the scores the LegalBench paper published</b>, edited Qwen with 15 labels (0.69) lands where an 11-billion-weight model did from its prompt (0.67), and with a few hundred labels (0.79) near where GPT-4 did (0.80). That is not a like-for-like contest: the paper's models were not given the labels ours were fitted on.</li>
+  <li><b>On LexGLUE the gains are small or absent.</b> On CaseHOLD the label-free calibration helps (0.28 to 0.46) and the read-out does not; on LEDGAR the model's state is level with word counts.</li>
   <li><b>There is a "hearsay" pattern inside Qwen, but it is a detector, not a switch.</b> Pushing on it changes the model's answers without making them more correct.</li>
 </ul>
 
@@ -253,6 +255,25 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
 </tbody></table></div>
 <p>Phi is better than Qwen before any edit, ahead on 108 of the 132 two-answer tasks, and the edit still adds to it: edited Phi beats word counts on 120 of 132 tasks, against 105 for edited Qwen. Phi gains less from the edit, 8 points against Qwen's 17. Part of the gap between the two models may be prompt length, since Qwen's numbers here come from the run that cut prompts at 1,024 tokens. We also meant to try a small Nemotron model, but the current one needs its own model code and was not tried.</p>
 
+<h3>Against the published scores</h3>
+<p>The LegalBench paper (2023) reports per-task scores for the models it tested, including GPT-4, GPT-3.5, Claude-1 and several 11 to 13 billion-weight open models. 143 of our tasks appear in its tables with every score. Averaged over those 143, in balanced accuracy:</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Model</th><th class="num">Weights</th><th class="num">Labelled examples used</th><th class="num">Score</th></tr></thead>
+<tbody>
+<tr><td>GPT-4 (paper)</td><td class="num">not published</td><td class="num">0 to 8 in the prompt</td><td class="num">0.80</td></tr>
+<tr><td>GPT-3.5 (paper)</td><td class="num">not published</td><td class="num">0 to 8 in the prompt</td><td class="num">0.74</td></tr>
+<tr><td>Claude-1 (paper)</td><td class="num">not published</td><td class="num">0 to 8 in the prompt</td><td class="num">0.70</td></tr>
+<tr><td>Flan-T5-XXL (paper)</td><td class="num">11 billion</td><td class="num">0 to 8 in the prompt</td><td class="num">0.67</td></tr>
+<tr><td>LLaMA-2-13B (paper)</td><td class="num">13 billion</td><td class="num">0 to 8 in the prompt</td><td class="num">0.53</td></tr>
+<tr><td>Qwen as shipped</td><td class="num">0.8 billion</td><td class="num">none</td><td class="num">0.53</td></tr>
+<tr><td>Qwen edited</td><td class="num">0.8 billion</td><td class="num">15</td><td class="num">0.69</td></tr>
+<tr><td>Qwen edited</td><td class="num">0.8 billion</td><td class="num">up to 250</td><td class="num">0.79</td></tr>
+<tr><td>Phi-4-mini edited</td><td class="num">3.8 billion</td><td class="num">15</td><td class="num">0.73</td></tr>
+<tr><td>Phi-4-mini edited</td><td class="num">3.8 billion</td><td class="num">up to 250</td><td class="num">0.81</td></tr>
+<tr><td>Word counts</td><td class="num">none</td><td class="num">15</td><td class="num">0.61</td></tr>
+</tbody></table></div>
+<p>Read it with care. The paper's models answered from a written prompt with a handful of worked examples; ours were fitted on the task's own labelled examples, which is a different and easier setting, and the items scored differ. The fair reading is narrower than "a small model beats GPT-4": with 15 labels, a 0.8-billion-weight model plus a formula lands where an 11-billion-weight model did from its prompt, and with a few hundred labels it lands near where GPT-4 did. The paper's models were not given the same labels, and a large model given them would most likely score higher too. On the four extraction tasks the paper's GPT-4 is ahead of our read-out on all four (definitions 0.82 against 0.77; plaintiffs 0.92 against 0.75; company defendants 0.65 against 0.12; individual defendants 0.30 against 0.22).</p>
+
 <h3>Answers copied from the text</h3>
 <p>Four LegalBench tasks ask for words from the text rather than a label: the term a sentence defines (<em>definition_extraction</em>), and the plaintiffs, company defendants and individual defendants named in securities class-action complaints (the three <em>ssla</em> tasks). The output-row edit cannot do these, because there is no fixed answer row to rewrite. But the same calculation can be pointed at each word of the text instead: from the model's internal state at that word, is this word part of the answer? Words that score above zero are copied out. This read-out sits beside the model rather than inside it: the model's own written reply is unchanged, and the answer comes from reading the model's state at every word.</p>
 <div class="tablewrap"><table>
@@ -265,11 +286,17 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
 </tbody></table></div>
 <p>Scores use LegalBench's own scoring code. The read-out works on definitions: from 30 examples it beats the model's own answer, reaching 0.77 when fitted on half the items, far above word counts. The other three do not work, each for a visible reason. Company defendants must be given by their full legal name ("Akorn, Inc."), but the complaint mostly says "Akorn", so copying words from the text can reach only 0.11, while the model, which writes the full name, gets 0.34. On individual defendants the read-out ties the model; the best possible score is only 0.31 because LegalBench's scorer adds a penalty once for every name, which punishes complaints with many defendants. And on plaintiffs, 378 of 500 complaints name none: the read-out's 0.75 is simply answering "Not named" every time, which scores the same. A version weighted to pick out the rare name words picks too many and gets worse with more examples. No version found the named plaintiffs.</p>
 
+<h3>Two more benchmarks: LexGLUE</h3>
+<p>LexGLUE is the other standard benchmark for legal language. It has no prompts, so each task needed a decision. Two were run on Qwen.</p>
+<p><b>CaseHOLD</b> gives a passage citing a case and five candidate holdings, and asks which one the cited case stands for. Our prompt lists the passage, the five holdings numbered 0 to 4, and "Answer:". Guessing scores 0.20 and the model as shipped scores 0.28. Removing its lean towards certain numbers, which uses no labels at all, takes it to 0.46. The read-out on top then makes it worse, 0.35 with 15 labels and 0.42 with 120, and word counts stay at chance. That makes sense: the right number depends on which of five holdings matches the passage, and its position is random, so there is no fixed pattern for "the answer is 3" to learn.</p>
+<p><b>LEDGAR</b> asks which of 100 types a contract provision is ("Governing Laws", "Terminations" and so on). The output-row edit does not fit 100 answers whose names share first tokens, so here the read-out sits beside the model, as for the extraction tasks: one read-out per type on the model's internal state, fitted on 1,000 labelled provisions, scored on all 10,000 test provisions. It gets 0.685 of them right, against 0.660 for word counts; averaged over types (macro-F1) it is slightly behind word counts, 0.48 against 0.49. With 1,000 labels for 100 types, the model's state adds about as much as the words do.</p>
+
 <h3>What was not run</h3>
 <ul class="short">
   <li><b>Three tasks with open answers</b> need knowledge or arithmetic, not reading: rule_qa (free-text answers), citation_prediction_open (naming a case) and sara_numeric (a tax amount in dollars). Nothing here adds knowledge, so there is no equivalent.</li>
   <li><b>Two tasks with fixed answers</b> do not fit the row edit: successor_liability, whose answers are sets of several labels, and unfair_tos, where two labels start with the same token.</li>
   <li><b>learned_hands_housing with its whole prompt</b>, which does not fit on the graphics card, and <b>a Nemotron model</b>, which needs its own model code.</li>
+  <li><b>LexGLUE SCOTUS</b>, whose Supreme Court opinions (12,500 tokens typical, up to 91,600) do not fit the graphics card whole, and LexGLUE's three tasks with several answers per item.</li>
 </ul>
 <details class="tech"><summary>Method and numbers</summary>
   <ul>
@@ -279,7 +306,7 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
     <li>Whole prompts: 89 tasks, 15 examples: edited 0.636 cut, 0.670 whole; as shipped 0.483, 0.503. At 15, 30, 60, 120 examples whole: edited 0.670, 0.703, 0.744 (80 tasks), 0.790 (55 tasks); word counts 0.589, 0.637, 0.687, 0.733.</li>
     <li>Phi-4-mini-instruct: layers on the GPU, its token table on the CPU, label scores computed in float32; same formula. Two-fold, two-answer tasks: edited 0.842 (Qwen 0.816).</li>
     <li>Extraction read-out: the final state at the last token of every word of the item's text; a word is +1 inside an occurrence of the answer (matched whole and by comma-separated pieces, ignoring case and punctuation). One standardised ridge, λ = number of fit words, threshold 0; the term task returns the single best-scoring run of words, the ssla tasks every run. Reported both weighted (answer words and other words counting equally) and unweighted; the table shows weighted for the first three tasks and unweighted for plaintiffs. Word baseline: the word, its neighbours and a capital-letter flag.</li>
-    <li>Rows: results/tables/rung3_all.csv, rung3_all_sizes.csv, rung3_all_uncut.csv, rung3_all_phi.csv, rung3_extract.csv; per-task table in docs/legalbench_benchmark.md.</li>
+    <li>Rows: results/tables/rung3_all.csv, rung3_all_sizes.csv, rung3_all_uncut.csv, rung3_all_phi.csv, rung3_extract.csv, legalbench_paper_compare.csv (with the paper's scores in legalbench_paper_scores.csv), rung3_lexglue.csv, rung3_ledgar.csv; per-task table in docs/legalbench_benchmark.md.</li>
   </ul>
 </details>
 
@@ -365,7 +392,7 @@ footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule);
 <h2>10. How to check any number</h2>
 <p>Every chart is drawn from rows in a results folder, and every row carries the git commit and timestamp of the run that produced it. Every decision, including the ones taken after results were seen, is dated in a decisions file with the defaults used. The code for each experiment is a single script. The repository is public at <a href="https://github.com/discover-legal/Handi">github.com/discover-legal/Handi</a>; start with <code>docs/decisions.md</code>, then <code>results/tables/</code>. The recipe for the output-row edit, with code, is <code>docs/cookbook.md</code>. The LegalBench-wide results are in <code>results/tables/rung3_all*.csv</code> and <code>rung3_extract.csv</code>, with a per-task table in <code>docs/legalbench_benchmark.md</code>; the prompts are each task's <code>base_prompt.txt</code> in the LegalBench repository (ten are in <code>tests/fixtures/legalbench_prompts/</code>; the rest are not redistributed here, because the LegalBench datasets carry differing licences).</p>
 
-<footer>Handi project. Written by the Claude and me, November 2026. Models: GPT-2 small, Pythia-70M, Pythia-160M, Qwen3.5-0.8B, TinyStories 1M/3M/8M/33M, Phi-4-mini-instruct. Corpora: WikiText-103, TinyStories, LegalBench (157 tasks).</footer>
+<footer>Handi project. Written by the Claude and me, November 2026. Models: GPT-2 small, Pythia-70M, Pythia-160M, Qwen3.5-0.8B, TinyStories 1M/3M/8M/33M, Phi-4-mini-instruct. Corpora: WikiText-103, TinyStories, LegalBench (157 tasks), LexGLUE (CaseHOLD, LEDGAR).</footer>
 </div>
 <div class="tip" id="tip"></div>
 
