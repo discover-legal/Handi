@@ -317,3 +317,40 @@ original 0.980, masked 0.972, paraphrased 0.972 (as shipped 0.59 -> 0.55 / 0.58)
 the stock wording; it reads the clause's content (a jurisdiction attached to the agreement; a term given a
 meaning). The cue list for definitions is incomplete (many definitional sentences quote a dictionary without
 "means"), which bounds what the masking can show for that task.
+
+### Rung 3 control tests (2026-11-09)
+
+Script analysis/run_rung3_controls.py, rows results/tables/rung3_controls.csv (R3X). Five controls on the three
+tasks with never-seen items, same fit sample, same never-seen items and same formula as the transfer test; every
+number is accuracy on the never-seen items (overruling 500, definition_classification 500, cuad_governing_law
+376). Builder defaults: 20 label permutations; 20 random subsets per fit size; word counts over words present in
+at least two fit items, same standardised ridge with lambda = n (a lambda grid of n/100 to 100n picked on the
+never-seen items was no better except 0.997 -> 1.000 on governing law); near-copy = word-set Jaccard to any fit
+item; untrained = the A0 block (fresh init by the family's rule), two seeds.
+
+| | overruling | definition | governing law |
+|---|---|---|---|
+| majority | 0.508 | 0.524 | 0.521 |
+| trained, as shipped | 0.674 | 0.590 | 0.617 |
+| trained, calibrated (uses no labels) | 0.838 | 0.888 | 0.912 |
+| trained, edited | 0.940 | 0.980 | 1.000 |
+| 1. shuffled labels: read-out alone (mean of 20) | 0.479 | 0.493 | 0.476 |
+| 1. shuffled labels: full edit (mean of 20) | 0.565 | 0.578 | 0.576 |
+| 2. word counts, same formula, same 500 labels | 0.910 | 0.862 | 0.997 |
+| 3. edit fitted on 10 items (mean, min of 20) | 0.862, 0.638 | 0.933, 0.894 | 0.997, 0.992 |
+| 3. edit fitted on 50 items (mean, min of 20) | 0.904, 0.890 | 0.949, 0.928 | 0.999, 0.992 |
+| 4. no fit item at Jaccard >= 0.5 (items kept) | 0.939 (488) | 0.980 (498) | 1.000 (212) |
+| 4. clauses from contracts absent from the fit sample | | | 1.000 (144) |
+| 5. untrained model, edited (seed 0, seed 1) | 0.832, 0.840 | 0.856, 0.896 | 0.960, 0.955 |
+
+Reading. (1) The read-out cannot manufacture a score from 500 labels: with shuffled labels it is at chance; the
+full edit keeps 0.57 because calibration uses no labels. (4) The score does not come from near-copies or shared
+contracts. (3) Ten labelled items already give 0.86 / 0.93 / 1.00. (2) and (5) bound what the trained model
+contributes: the same ridge on word counts, and the same recipe on a network with random weights, reach most of
+the score on these three tasks. Governing law is solved by word counts (0.997), so its 1.000 is not evidence of
+anything the trained model knows. The trained state is worth +0.03 on overruling and +0.12 on definitions over
+word counts, and +0.10 / +0.10 / +0.04 over the untrained network. This corrects the earlier notes: "the model
+as shipped could not express a distinction it computes" and "it reads the clause's content" are supported for
+definition_classification, weakly for overruling, and not shown for cuad_governing_law, where the words alone
+suffice. Not run: the word-count baseline and the untrained model at small fit sizes (10 to 100 labels), which
+is where the trained state would be expected to matter most.
