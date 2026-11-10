@@ -522,3 +522,33 @@ Reading: Phi is better than Qwen before the edit (raw higher on 108 of 132 two-l
 adds to it; edited Phi is above word counts on 120 of 132 two-label tasks at 15 examples (Qwen 105). The prompt
 lengths differ between the two runs (4,096 against 1,024 tokens), so part of the gap may be prompt length.
 Both runs at low priority (owner: use fewer resources, at most about 30% of the CPU): 7 of 24 cores, nice 19.
+
+### Extraction read-out: results (2026-11-10)
+
+Run as decided above (analysis/run_rung3_extract.py, rows results/tables/rung3_extract.csv, hypothesis R3X):
+Qwen3.5-0.8B, the four tasks, 500 items each, prompts whole (longest 3,318 tokens), 15, 30, 60, 120 labelled
+examples and half the sample. Scored with LegalBench's own scorers. My choices, stated when built: a word is
+picked when its read-out score is above 0; both a weighted fit (answer words and other words count equally)
+and an unweighted one are reported, because answer words are rare and neither suits every task; the word
+baseline uses the word, its neighbours and a capital-letter flag. Ceiling = the best any per-word pick can do
+(the labels themselves turned into an answer).
+
+| task | raw model | read-out 15 / 30 / 60 / 120 / half | word baseline 120 | ceiling |
+|---|---|---|---|---|
+| definition_extraction (accuracy) | 0.670 | 0.657 / 0.694 / 0.719 / 0.734 / 0.768 | 0.406 | 0.886 |
+| ssla_company_defendants (F1) | 0.339 | 0.051 / 0.111 / 0.118 / 0.118 / 0.110 | 0.038 | 0.109 |
+| ssla_individual_defendants (F1) | 0.233 | 0.221 / 0.221 / 0.218 / 0.214 / 0.214 | 0.111 | 0.309 |
+| ssla_plaintiff (F1) | 0.103 | 0.745 unweighted at every size | 0.745 | 0.908 |
+
+(weighted read-out shown except for ssla_plaintiff.)
+
+Reading: definition_extraction works. From 30 labelled examples the read-out beats the model's own answer, up to
+0.768 against 0.670, and is far above the word baseline. ssla_company_defendants cannot work this way: the
+answer is the full legal name ("Akorn, Inc.") and the text mostly says "Akorn", so only 15% of answers are in
+the text and the ceiling (0.109) is below the model's own answer (0.339), which writes the full name.
+ssla_individual_defendants: the read-out is level with the model's own answer, below the ceiling; the ceiling
+is low because LegalBench's ssla scorer adds false positives once per answer (as written in its code), which
+punishes items with many names. ssla_plaintiff: 378 of 500 items are "Not named". Unweighted, the read-out
+picks no word on any item (checked: 0 of 250), so its 0.745 is "Not named" every time (0.746 on all 500);
+weighted, it picks too many words and gets worse with more examples (0.624 down to 0.115). The model's own
+answer scores 0.103. No version finds the named plaintiffs.
