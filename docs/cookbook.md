@@ -125,6 +125,12 @@ model.save_pretrained("edited-model"); tok.save_pretrained("edited-model")
    tasks' edits summed into the same rows mostly cancel. For several tasks, give each its own label tokens
    (e.g. " A"/" B" vs " C"/" D") or keep separate edited copies.
 4. **It adds no knowledge.** If the probe cannot read the answer, nothing here will create it.
+5. **Check what the read-out is reading.** A classifier can score well by spotting a stock phrase. Test it:
+   delete or paraphrase the phrases you suspect in the held-out items and rescore. On governing-law clauses
+   the edited Qwen kept 0.997 after "governed by the laws of" was deleted from every clause (the model as
+   shipped fell to a coin flip), and 0.97 on definitions after "means" / "is defined as" went. So that
+   read-out used the clause's content. Yours may not; this check is cheap and belongs in the write-up.
+   Script: `analysis/run_rung3_cue.py`.
 
 ## Variants
 
