@@ -297,3 +297,12 @@ overruling 0.82, definition 0.93, cuad 0.97 survive; the other seven fall back t
 that every task shares; it generalises to new items of its own task and does not coexist with the others. A
 model edited for several tasks would need one row pair per task (distinct label tokens) or an edit deeper than
 the output table.
+
+### Rung 3 transfer, remaining items (2026-11-10)
+
+definition_classification: the 337 test items not yet scored (1,337 total = 500 sampled + 500 fresh + 337):
+majority 0.540, as shipped 0.561, edited 0.979. cuad_governing_law has no remaining items (876 = 500 + 376). The
+LegalBench train splits (8 and 6 items) score 1.00 as shipped and edited. Every item of both tasks has now been
+scored by an edit that did not see it. Both tasks are lexically marked (defining sentences say "means" / "is
+defined as"; governing-law clauses say "governed by the laws of"); the finding is that the model as shipped
+could not express a distinction it computes. Cookbook for the edit: docs/cookbook.md.

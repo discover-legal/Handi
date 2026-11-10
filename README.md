@@ -14,6 +14,7 @@ readers who are not machine-learning specialists and defines every term it uses.
 | `docs/writeup.md` | The full technical write-up |
 | `docs/hypotheses.md` | The nineteen pre-registered hypotheses and their pass rules |
 | `docs/decisions.md` | Every decision, dated, including those taken after results were seen; run notes |
+| `docs/cookbook.md` | Recipe and code for writing a task read-out into a model's output rows (the Rung 3 edit) |
 | `docs/plan.md` | The original plan |
 | `results/tables/*.csv` | Every measured number, one row each, with the git commit and timestamp of its run |
 | `results/summary.md` | Machine-generated verdicts per hypothesis |
