@@ -665,3 +665,8 @@ Reading: the bigger the model, the better it answers as shipped (0.58, 0.72, 0.8
 less the 15-label edit adds (+0.19, +0.09, +0.01). With up to 250 labels the edit still adds 7 to 26 points at
 every size, and the edited scores rise with size (0.848, 0.876, 0.879). 2B on all 132 two-label tasks, 15
 labels: raw 0.687, edited 0.771, word counts 0.651.
+
+Qwen3.5-4B, the 36 tasks that ran out of GPU memory (2026-11-11). Decided by the owner: leave them out. Not
+rerun, not run with shorter prompts. The 4B is reported on its 117 finished tasks; comparisons across models use
+only the tasks every compared model finished, as above. The 9B 4-bit run, interrupted at 19 of 157 tasks when
+the machine went down (2026-11-11 00:28), was resumed with the same command (finished tasks skipped).
