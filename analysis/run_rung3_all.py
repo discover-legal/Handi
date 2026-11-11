@@ -113,7 +113,16 @@ def load_hf(model_id, four_bit=False):
                                llm_int8_enable_fp32_cpu_offload=True, llm_int8_skip_modules=["lm_head", "embed_tokens"])
         dm = {"model.embed_tokens": "cpu", "model.layers": 0, "model.norm": 0, "model.rotary_emb": 0, "lm_head": "cpu"}
         model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16, quantization_config=q, device_map=dm).eval()
-        return model, tok, model.lm_head.weight.detach().float()
+        # modules mapped to the CPU are offloaded (their weights stay on the meta device until a forward pass), so
+        # the output table is read from the checkpoint file itself
+        import json
+        from huggingface_hub import hf_hub_download
+        from safetensors import safe_open
+        wm = json.load(open(hf_hub_download(model_id, "model.safetensors.index.json")))["weight_map"]
+        key = "lm_head.weight" if "lm_head.weight" in wm else next(k for k in wm if k.endswith("embed_tokens.weight"))
+        with safe_open(hf_hub_download(model_id, wm[key]), "pt") as f:
+            U = f.get_tensor(key).float()
+        return model, tok, U
     model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16).eval()
     if getattr(model.lm_head, "bias", None) is not None:
         raise RuntimeError("the output table has a bias; the row edit as written does not cover it")

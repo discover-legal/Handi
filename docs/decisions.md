@@ -644,3 +644,24 @@ token tables, which hold the label rows, stay uncompressed. Rows marked src_dtyp
 results/tables/rung3_all_qwen2b.csv, _qwen4b.csv, _qwen9b_nf4.csv. bitsandbytes installed into .venv for this.
 Check on two tasks, 2B, 15 labels: proa raw 0.854, edited 0.900; overruling raw 0.856, edited 0.916 (0.8B:
 0.53 / 0.67 raw).
+
+Bigger models, results so far (2026-11-10 night). Qwen3.5-2B: all 153 tasks ran. Qwen3.5-4B: 117 of 153; the
+other 36 (all Learned Hands, all supply chain, some MAUD, corporate_lobbying, jcrew_blocker) ran out of GPU
+memory: the 4B's layers fill most of the 8 GB card, leaving too little for prompts near 4,096 tokens. A gap; not
+rerun with shorter prompts, which would be a new cut not decided. Qwen3.5-9B 4-bit: the first run failed on every
+task (my bug: the CPU-mapped output table was left on the meta device by the offload); fixed by reading the
+output table from the checkpoint file, checked on proa and overruling, rerun started.
+
+Balanced accuracy, mean over the tasks all four models finished (98 two-label, 19 many-label):
+
+| | 0.8B raw | 0.8B edited | 2B raw | 2B edited | 4B raw | 4B edited | Phi-4-mini raw | Phi edited | word counts |
+|---|---|---|---|---|---|---|---|---|---|
+| two-label, 15 labels | 0.584 | 0.773 | 0.718 | 0.809 | 0.808 | 0.817 | 0.707 | 0.802 | 0.674 |
+| two-label, half the sample | 0.584 | 0.848 | 0.717 | 0.876 | 0.807 | 0.879 | 0.707 | 0.872 | 0.794 |
+| many-label, 15 labels | 0.284 | 0.374 | 0.356 | 0.460 | 0.508 | 0.513 | 0.415 | 0.446 | 0.328 |
+| many-label, half the sample | 0.284 | 0.525 | 0.355 | 0.620 | 0.509 | 0.674 | 0.415 | 0.574 | 0.490 |
+
+Reading: the bigger the model, the better it answers as shipped (0.58, 0.72, 0.81 on two-label tasks), and the
+less the 15-label edit adds (+0.19, +0.09, +0.01). With up to 250 labels the edit still adds 7 to 26 points at
+every size, and the edited scores rise with size (0.848, 0.876, 0.879). 2B on all 132 two-label tasks, 15
+labels: raw 0.687, edited 0.771, word counts 0.651.
