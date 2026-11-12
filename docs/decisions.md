@@ -562,6 +562,12 @@ on disk, ignored by .gitignore); the original ten stay tracked. They remain in t
 9fd59f3 and a02c44b; removing them from history needs a rewrite of the public history and a force push, which
 was not done.
 
+History rewritten (2026-11-12). Decided by the owner: remove them from the history too. The 147 files were
+stripped from every commit with git filter-repo and main was force-pushed; the final files are unchanged (same
+tree). Every commit from 9fd59f3 on has a new ID, and a02c44b is gone (it only added those files). The git_sha
+column of the result tables keeps the old IDs (five tables cite rewritten commits); docs/commit_map_2026-11-12.txt
+maps old to new. GitHub may keep the old commits reachable by ID in its caches until it garbage-collects them.
+
 ### LegalBench: our scores beside the paper's published scores (2026-11-10)
 
 Decided by the owner: compare with published scores. Source: the LegalBench paper (arXiv 2308.11462 v1),
