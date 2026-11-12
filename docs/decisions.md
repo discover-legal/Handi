@@ -669,4 +669,5 @@ labels: raw 0.687, edited 0.771, word counts 0.651.
 Qwen3.5-4B, the 36 tasks that ran out of GPU memory (2026-11-11). Decided by the owner: leave them out. Not
 rerun, not run with shorter prompts. The 4B is reported on its 117 finished tasks; comparisons across models use
 only the tasks every compared model finished, as above. The 9B 4-bit run, interrupted at 19 of 157 tasks when
-the machine went down (2026-11-11 00:28), was resumed with the same command (finished tasks skipped).
+the machine went down (2026-11-11 00:28), was resumed with the same command (finished tasks skipped), paused by
+the owner at 72 of 157 (2026-11-11), and resumed by the owner (2026-11-12).

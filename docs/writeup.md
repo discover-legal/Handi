@@ -11,8 +11,14 @@ Do the weights of trained transformer language models contain regular mathematic
 enough that weights *authored* from that structure, with no training at all, produce a network that does
 anything language-like? The ultimate target was law tasks (LegalBench).
 
-The project was prompted by "Sparks of Weight-Space Programming" (Takehi, Teoh, Zhang, Khattab, MIT CSAIL,
-Nov 2026), in which an LLM wrote a Go policy as a program. Nobody had tried a language model this way.
+The project was prompted by "Sparks of Weight-Space Programming: LLMs can natively read & write neural network
+weights" (Takehi, Teoh, Zhang, Khattab, MIT CSAIL, 2 Nov 2026,
+https://rikiyat.github.io/blog/weight-space-programming/), in which GPT-6 Astra wrote a 1.48M-weight Go network as a
+program and edited the weights of Qwen3.5-0.8B without gradients. Hand-built and compiled transformers exist for
+algorithmic tasks (RASP, Weiss et al. 2021; Tracr, Lindner et al. 2023; the AdderBoard entries), and initialisation
+from the statistics of trained weights has been studied (Trockman & Kolter 2023). As far as we know, nobody had
+tried to write the weights of a full-size language model from statistics measured in trained ones, with no
+training; that is what Part B and Rung 2 do.
 
 ## 2. What was built
 
@@ -40,7 +46,8 @@ H17). Five seeds per cell, 95% confidence intervals, on all eight models.
 
 ## 3. What the trained weights contain
 
-Fourteen of the nineteen structural hypotheses are confirmed under the pre-registered rule; most with
+Fourteen of the nineteen structural hypotheses pass the pre-registered rule (one of them, H9, only mechanically: on
+inspection it shows no fractal structure, so thirteen are confirmed in substance); most with
 z-scores in the hundreds or thousands. The trained weights are nothing like random matrices.
 
 | hypothesis | verdict | what it says |
@@ -85,11 +92,11 @@ model knowing only word frequencies scores; the bigram line, one knowing only wo
 
 (A2 and A2F are within noise of A1 and A3 and are in `results/summary.md`. A4 exists only where H6 found
 a circuit. The trained TinyStories models score poorly on WikiText because they were trained on children's
-stories; on TinyStories they score 1.1 to 2.3.)
+stories; on TinyStories they score 1.2 to 2.1.)
 
 **H13 verdict: NULL.** The pre-registered test asked whether any pattern-authored condition (A1 to A3)
 beats fresh random init or the spectrum-matched control. None does. The failure is in the wrong direction
-and is large: every spectrum-matched condition is 3 to 30 nats *worse* than fresh random init. The reason
+and is large: every spectrum-matched condition is 2 to 32 nats *worse* than fresh random init. The reason
 is simple once seen. Trained spectra have very large singular values; placed on random directions they
 produce confident wrong logits. A fresh init is near-uniform and therefore cannot be very wrong. Adding the
 outlier dimensions, the embedding anisotropy, the shared subspace, the identity-like circuits (A3) or the
@@ -111,8 +118,8 @@ every fill, A7 included, scores the uniform line. A7 is less confidently wrong, 
 premise: it takes the smoothed corpus bigram table, factorises it in closed form (randomised SVD, or a
 signed symmetric eigendecomposition for models with tied embeddings, the sign carried by the final-norm
 gain) and writes the factors into the embedding and unembedding, with the layers above zeroed. No gradient
-step. The result is the first authored model in the project that knows anything: 7.3 to 7.9 nats, three
-to four nats below fresh init, with the two untied Pythia models below the unigram line. The six
+step. The result is the first authored model in the project that knows anything: 7.3 to 7.9 nats, 2.9
+to 5.0 nats below fresh init, with the two untied Pythia models below the unigram line. The six
 tied-embedding models sit 0.1 to 0.4 nat above it, and the reason is exact: a tied model's direct-path
 logit for "b after a" must equal that for "a after b", so only the symmetric half of the bigram table can
 be carried. All eight remain well above the bigram line, because a rank-d factorisation keeps only part of
@@ -136,7 +143,8 @@ condition does anything on law tasks.
 
 3. **Content comes from data.** The one condition that works is the one that brings in the corpus (A8),
    and it works exactly as far as the data it brings: a bigram model, and a half-bigram model where the
-   architecture ties its embeddings. This is the paper's Gemma caveat in a stronger form: weight edits
+   architecture ties its embeddings. This is the paper's Gemma caveat ("Editing weights could remove an obstacle that hid an ability, but it could
+   not add an ability the model lacked") in a stronger form: weight edits
    cannot add an ability the weights do not encode, and the encoding is the token-to-direction pairing,
    which the second-order statistics do not see.
 

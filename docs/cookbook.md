@@ -1,8 +1,9 @@
 # Cookbook: pulling a classifier out of a model's weights
 
 How to take a trained causal language model that answers a Yes/No classification task badly, find out
-whether it already knows the answer internally, and if it does, write a read-out into its own output table so
-that the plain model answers well. No training step. This is the recipe behind the Rung 3 result (Qwen3.5-0.8B
+whether the answer is linearly readable from its internal state, and if it is, write a read-out into its own output
+table so that the plain model answers well. No fine-tuning or gradient descent: a calibration and a ridge regression,
+fitted in closed form on labelled examples (both known tools; see the report's "Prior work and credit"). This is the recipe behind the Rung 3 result (Qwen3.5-0.8B
 on LegalBench: 0.57 to 0.78 mean over ten tasks; 0.94, 0.98 and 1.00 on never-seen items of overruling,
 definition classification and governing law).
 
@@ -19,7 +20,8 @@ definition classification and governing law).
 A transformer turns the prompt into an internal state at the last position: a vector `h` of `d` numbers (1,024
 for Qwen3.5-0.8B) after the final normalisation. The output table `U` (`lm_head.weight`, one row per token)
 scores every token as `U[token] . h`; the answer is the higher of `U[Yes] . h` and `U[No] . h`. If a linear
-read-out of `h` predicts the label well on held-out examples, the model knows the answer. Writing that read-out
+read-out of `h` predicts the label well on held-out examples, the answer is linearly readable there (which is not
+the same as the model understanding the task: compare with word counts, check 6 below). Writing that read-out
 into the two rows, `U[Yes] += a w` and `U[No] -= a w`, makes the plain model use it. A calibration term removes
 the model's built-in lean towards one label.
 
@@ -116,8 +118,9 @@ model.save_pretrained("edited-model"); tok.save_pretrained("edited-model")
 
 1. **Held-out first.** Never report the in-sample number. In-sample, every task scored 0.89 to 1.00; held-out
    is the real figure.
-2. **Verify on the live model.** After writing the rows, re-run your ordinary scorer on the held-out half. The
-   offline arithmetic and the live model agreed to three decimals in our runs; if they do not, the hidden state
+2. **Verify on the live model.** After writing the rows, re-run your ordinary scorer on the held-out half. In our
+   check on hearsay the live model (bfloat16) scored 0.638 and the offline arithmetic (float64) 0.617, one
+   example of 47 apart; if they differ by more than a close call or two, the hidden state
    you collected is not the one `lm_head` sees (check that `hidden_states[-1]` is post-norm for your
    architecture).
 3. **One task per label pair.** The edit lives in the " Yes" and " No" rows, which every Yes/No prompt reads.
@@ -128,8 +131,11 @@ model.save_pretrained("edited-model"); tok.save_pretrained("edited-model")
 5. **Check what the read-out is reading.** A classifier can score well by spotting a stock phrase. Test it:
    delete or paraphrase the phrases you suspect in the held-out items and rescore. On governing-law clauses
    the edited Qwen kept 0.997 after "governed by the laws of" was deleted from every clause (the model as
-   shipped fell to a coin flip), and 0.97 on definitions after "means" / "is defined as" went. So that
-   read-out used the clause's content. Yours may not; this check is cheap and belongs in the write-up.
+   shipped fell to a coin flip), and 0.97 on definitions after "means" / "is defined as" went. That rules out
+   the one stock phrase, not everything else in the words: the same formula on plain word counts scores 0.997 on
+   governing law, so its score says nothing about what the model knows. Run the word-count control too (and,
+   if you can, the same recipe on a random-weight copy of the model: it reached 0.83 to 0.96 on our three tasks
+   with a few hundred labels). This check is cheap and belongs in the write-up.
    Script: `analysis/run_rung3_cue.py`.
 
 ## Variants
