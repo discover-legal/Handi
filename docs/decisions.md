@@ -671,3 +671,11 @@ rerun, not run with shorter prompts. The 4B is reported on its 117 finished task
 only the tasks every compared model finished, as above. The 9B 4-bit run, interrupted at 19 of 157 tasks when
 the machine went down (2026-11-11 00:28), was resumed with the same command (finished tasks skipped), paused by
 the owner at 72 of 157 (2026-11-11), and resumed by the owner (2026-11-12).
+
+Qwen3.5-9B 4-bit, finished (2026-11-12 09:54): all 153 label tasks ran, none ran out of memory (log has no
+errors; 23,657 s for the resumed part). On the same 98 two-label and 19 many-label tasks as the table above:
+two-label, 15 labels raw 0.837, edited 0.834; half the sample raw 0.836, edited 0.896; many-label, 15 labels raw
+0.550, edited 0.527; half the sample raw 0.550, edited 0.701. Calibration alone, two-label, 15 labels: 0.847.
+On all 132 two-label tasks, 15 labels: raw 0.786, calibrated 0.809, edited 0.803, word counts 0.651; half the
+sample edited 0.869. Reading: the 15-label edit adds nothing at 9B (it falls 0.003 on two-label, 0.023 on
+many-label); with up to 250 labels it still adds 6 points (two-label) and 15 points (many-label).
