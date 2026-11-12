@@ -46,7 +46,7 @@ H17). Five seeds per cell, 95% confidence intervals, on all eight models.
 
 ## 3. What the trained weights contain
 
-Fourteen of the nineteen structural hypotheses pass the pre-registered rule (one of them, H9, only mechanically: on
+Fourteen of the eighteen structural hypotheses (H13 is the authoring capstone) pass the pre-registered rule (one of them, H9, only mechanically: on
 inspection it shows no fractal structure, so thirteen are confirmed in substance); most with
 z-scores in the hundreds or thousands. The trained weights are nothing like random matrices.
 

@@ -21,7 +21,7 @@ A transformer turns the prompt into an internal state at the last position: a ve
 for Qwen3.5-0.8B) after the final normalisation. The output table `U` (`lm_head.weight`, one row per token)
 scores every token as `U[token] . h`; the answer is the higher of `U[Yes] . h` and `U[No] . h`. If a linear
 read-out of `h` predicts the label well on held-out examples, the answer is linearly readable there (which is not
-the same as the model understanding the task: compare with word counts, check 6 below). Writing that read-out
+the same as the model understanding the task: compare with word counts, check 5 below). Writing that read-out
 into the two rows, `U[Yes] += a w` and `U[No] -= a w`, makes the plain model use it. A calibration term removes
 the model's built-in lean towards one label.
 
